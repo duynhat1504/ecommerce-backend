@@ -36,6 +36,9 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role;
 
+    @Column(nullable = false)
+    private Boolean active;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
