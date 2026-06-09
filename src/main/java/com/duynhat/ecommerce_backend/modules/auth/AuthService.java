@@ -7,6 +7,6 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 
 public interface AuthService {
 
-    RegisterResponse register(RegisterRequest request);
+    AuthResponse register(RegisterRequest request);
     AuthResponse login(LoginRequest request);
 }
