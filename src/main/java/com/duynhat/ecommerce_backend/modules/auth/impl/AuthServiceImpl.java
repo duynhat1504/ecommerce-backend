@@ -6,6 +6,7 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
+import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.auth.mapper.AuthMapper;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -24,6 +25,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Override
     public AuthResponse register(RegisterRequest req) {
@@ -53,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         boolean isPasswordMatched = passwordEncoder.matches(
                 req.getPassword(),
@@ -68,6 +72,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Account is disabled");
         }
 
-        return AuthMapper.toAuthResponse(user);
+        String accessToken = jwtService.generateAccessToken(user.getEmail());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .tokenType("Bearer")
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .build();
     }
 }
