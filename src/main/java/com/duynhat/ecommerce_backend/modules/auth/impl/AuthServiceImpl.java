@@ -26,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public RegisterResponse register(RegisterRequest req) {
+    public AuthResponse register(RegisterRequest req) {
         String normalizedEmail = req.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new BadRequestException("Invalid email or password");
@@ -34,20 +34,17 @@ public class AuthServiceImpl implements AuthService {
 
         String passwordHash = passwordEncoder.encode(req.getPassword());
         User user = User.builder()
+                .fullName(req.getFullName())
                 .email(normalizedEmail)
-                .passwordHash(passwordHash)
+                .password(passwordHash)
                 .fullName(req.getFullName())
                 .role(Role.USER)
+                .active(true)
                 .build();
 
         try {
             User saved = userRepository.save(user);
-
-            return RegisterResponse.builder()
-                    .id(saved.getId())
-                    .email(saved.getEmail())
-                    .name(saved.getFullName())
-                    .build();
+            return AuthMapper.toAuthResponse(saved);
         } catch (DataIntegrityViolationException e) {
             throw new BadRequestException("Invalid email or password");
         }
@@ -60,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
 
         boolean isPasswordMatched = passwordEncoder.matches(
                 req.getPassword(),
-                user.getPasswordHash()
+                user.getPassword()
         );
 
         if (!isPasswordMatched) {

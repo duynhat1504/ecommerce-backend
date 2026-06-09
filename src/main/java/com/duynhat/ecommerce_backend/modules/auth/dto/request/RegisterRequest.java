@@ -13,17 +13,15 @@ import org.springframework.context.annotation.Role;
 @AllArgsConstructor
 public class RegisterRequest {
 
-    @NotBlank(message = "Email must not be blank")
+    @NotBlank(message = "Full name is required")
+    private String fullName;
+
     @Email(message = "Email is invalid")
-    @Size(max = 255, message = "Email must be at most 255 characters")
+    @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "Password must not be blank")
-    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    @NotBlank(message = "Password is required")
     private String password;
-
-    @NotBlank(message = "Fullname must not be blank")
-    @Size(max = 255, message = "Fullname must be at most 255 characters")
-    private String fullName;
 
 }
