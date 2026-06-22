@@ -6,5 +6,6 @@ public interface UserService {
 
     User findByEmail(String email);
     boolean existsByEmail(String email);
+    User findOrCreateGoogleUser(String googleId, String email, String fullName);
 
 }
