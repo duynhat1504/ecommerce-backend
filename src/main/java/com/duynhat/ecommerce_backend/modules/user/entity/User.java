@@ -30,6 +30,9 @@ public class User {
     @Column(nullable = false, length = 100)
     private String fullName;
 
+    @Column(unique = true)
+    private String googleId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
