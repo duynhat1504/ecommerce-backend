@@ -3,7 +3,6 @@ package com.duynhat.ecommerce_backend.modules.auth;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
-import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 
 public interface AuthService {
 
