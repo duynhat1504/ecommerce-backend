@@ -2,7 +2,6 @@ package com.duynhat.ecommerce_backend.modules.auth.mapper;
 
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
-import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 
 public class AuthMapper {
 
