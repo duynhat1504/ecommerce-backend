@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+app:
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
+
 spring:
   application:
     name: ecommerce-backend
@@ -19,6 +22,19 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+
 
 jwt:
   secret: "my-super-secret-key-my-super-secret-key-123456"

@@ -5,7 +5,6 @@ import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
-import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.auth.mapper.AuthMapper;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;

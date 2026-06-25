@@ -1,0 +1,9 @@
+package com.duynhat.ecommerce_backend.modules.product;
+
+import com.duynhat.ecommerce_backend.modules.product.entity.Product;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface ProductRepository extends JpaRepository<Product, UUID> {
+}
