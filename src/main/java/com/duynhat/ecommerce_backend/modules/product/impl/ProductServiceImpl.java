@@ -27,11 +27,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse create(CreateProductRequest req) {
-        if (productRepository.existsByName(req.getName())) {
-            throw new BadRequestException("Product name already exists");
-        }
-
-        Category category = categoryService.findCategoryById(req.getCategoryId());
+        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
 
         Product product = Product.builder()
                 .name(req.getName())
@@ -73,7 +69,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Product not found"));
 
-        Category category = categoryService.findCategoryById(req.getCategoryId());
+        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
 
         product.setName(req.getName());
         product.setDescription(req.getDescription());
