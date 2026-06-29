@@ -40,7 +40,6 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(req.getFullName())
                 .email(normalizedEmail)
                 .password(passwordHash)
-                .fullName(req.getFullName())
                 .role(Role.USER)
                 .active(true)
                 .build();
@@ -55,7 +54,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        String normalizedEmail = req.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         boolean isPasswordMatched = passwordEncoder.matches(

@@ -1,10 +1,13 @@
 package com.duynhat.ecommerce_backend.modules.user.impl;
 
+import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
+import com.duynhat.ecommerce_backend.modules.user.dto.response.UserResponse;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import com.duynhat.ecommerce_backend.modules.user.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,16 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Override
+    public UserResponse getCurrentUser(Authentication authentication) {
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        return toResponse(user);
+    }
 
     @Override
     public User findByEmail(String email) {
@@ -53,5 +66,15 @@ public class UserServiceImpl implements UserService {
                         .build());
 
         return userRepository.save(user);
+    }
+
+    private UserResponse toResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .active(user.getActive())
+                .build();
     }
 }
