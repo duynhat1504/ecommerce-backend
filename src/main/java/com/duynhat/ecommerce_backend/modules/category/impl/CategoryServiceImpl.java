@@ -22,7 +22,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse create(CreateCategoryRequest req) {
-        if (categoryRepository.existsByName(req.getName())) {
+        if (categoryRepository.existsCategoryByNameIgnoreCase(req.getName())) {
             throw new BadRequestException("Category name already exists");
         }
 
@@ -59,7 +59,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse update(UUID id, UpdateCategoryRequest req) {
         Category category = findCategoryById(id);
 
-        categoryRepository.findByName(req.getName())
+        categoryRepository.findCategoryByNameIgnoreCase(req.getName().trim())
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
                         throw new BadRequestException("Category name already exists");
@@ -79,6 +79,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category findCategoryById(UUID id) {
         return categoryRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Category not found"));
+    }
+
+    @Override
+    public Category findCategoryByNameIgnoreCase(String name) {
+        return categoryRepository.findCategoryByNameIgnoreCase(name.trim())
                 .orElseThrow(() -> new BadRequestException("Category not found"));
     }
 

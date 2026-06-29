@@ -16,4 +16,5 @@ public interface CategoryService {
     CategoryResponse update(UUID id, UpdateCategoryRequest request);
 //    void delete(UUID id);
     Category findCategoryById(UUID id);
+    Category findCategoryByNameIgnoreCase(String name);
 }
