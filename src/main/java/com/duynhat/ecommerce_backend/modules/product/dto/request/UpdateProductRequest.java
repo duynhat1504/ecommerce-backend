@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -29,8 +28,8 @@ public class UpdateProductRequest {
 
     private String imageUrl;
 
-    @NotNull(message = "Category id is required")
-    private UUID categoryId;
+    @NotBlank(message = "Category name is required")
+    private String categoryName;
 
     private Boolean active;
 }
