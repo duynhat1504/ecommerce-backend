@@ -5,13 +5,16 @@ app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: ecommerce-backend
 
   datasource:
     url: jdbc:postgresql://localhost:5432/ecommerce_db
-    username: postgres
-    password: "nhat15042005"
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -37,8 +40,9 @@ spring:
 
 
 jwt:
-  secret: "my-super-secret-key-my-super-secret-key-123456"
-  access-token-expiration: 86400000
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+
   #secret: key dùng để ký token
   #access-token-expiration: thời gian sống của token, đơn vị milliseconds
   #86400000 = 24 giờ
