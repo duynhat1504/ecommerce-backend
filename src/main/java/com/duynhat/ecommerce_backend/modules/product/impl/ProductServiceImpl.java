@@ -11,9 +11,11 @@ import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductRespons
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -49,11 +51,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductResponse> getAll() {
-        return productRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ProductResponse> getAll(int page, int size) {
+        if (page < 0 || size <= 0 || size > 100) {
+            throw new BadRequestException("Invalid pagination parameters");
+        }
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Product> products = productRepository.findAll(pageable);
+
+        return products.map(this::toResponse);
     }
 
     @Override
