@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface ProductService {
 
     ProductResponse create(CreateProductRequest request);
-    Page<ProductResponse> getAll(int page, int size);
+    Page<ProductResponse> getAll(int page, int size, String sort);
     ProductResponse getById(UUID id);
     ProductResponse update(UUID id, UpdateProductRequest request);
 }
