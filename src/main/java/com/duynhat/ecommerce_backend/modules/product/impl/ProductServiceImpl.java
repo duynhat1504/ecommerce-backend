@@ -14,8 +14,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,6 +28,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private CategoryService categoryService;
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "name",
+            "price",
+            "stock",
+            "createdAt",
+            "updateAt"
+    );
 
     @Override
     public ProductResponse create(CreateProductRequest req) {
@@ -51,11 +61,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAll(int page, int size) {
+    public Page<ProductResponse> getAll(int page, int size, String sort) {
         if (page < 0 || size <= 0 || size > 100) {
             throw new BadRequestException("Invalid pagination parameters");
         }
-        Pageable pageable = PageRequest.of(page, size);
+
+        Sort sortObject = buildSort(sort);
+
+        Pageable pageable = PageRequest.of(page, size, sortObject);
 
         Page<Product> products = productRepository.findAll(pageable);
 
@@ -89,6 +102,32 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return toResponse(productRepository.save(product));
+    }
+
+    private Sort buildSort(String sortPram) {
+        if (sortPram == null || sortPram.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        String[] parts = sortPram.split(",");
+
+        String field = parts[0].trim();
+
+        String direction = parts[1].length() > 1 ? parts[1].trim() : "asc";
+
+        if (!ALLOWED_SORT_FIELDS.contains(field)) {
+            throw new BadRequestException("Invalid sort field " + field);
+        }
+
+        Sort.Direction sortDirection;
+
+        try {
+            sortDirection = Sort.Direction.fromString(direction);
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Sort direction must be asc or desc");
+        }
+
+        return Sort.by(sortDirection, field);
     }
 
     private ProductResponse toResponse(Product product) {

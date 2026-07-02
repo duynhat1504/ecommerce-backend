@@ -27,9 +27,10 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sort
     ) {
-        return ResponseEntity.ok(productService.getAll(page, size));
+        return ResponseEntity.ok(productService.getAll(page, size, sort));
     }
 
     @GetMapping("/{id}")
