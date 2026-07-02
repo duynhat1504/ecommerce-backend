@@ -111,13 +111,21 @@ public class ProductServiceImpl implements ProductService {
 
         String[] parts = sortPram.split(",");
 
+        if (parts.length > 2) {
+             throw new BadRequestException("Sort format must be field,direction");
+        }
+
         String field = parts[0].trim();
 
-        String direction = parts[1].length() > 1 ? parts[1].trim() : "asc";
+        if (field.isBlank()) {
+            throw new BadRequestException("Sort field must not be blank");
+        }
 
         if (!ALLOWED_SORT_FIELDS.contains(field)) {
             throw new BadRequestException("Invalid sort field " + field);
         }
+
+        String direction = parts.length == 2 ? parts[1].trim() : "asc";
 
         Sort.Direction sortDirection;
 
