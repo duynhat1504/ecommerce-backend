@@ -11,7 +11,7 @@ public interface ProductService {
 
     ProductResponse create(CreateProductRequest request);
     Page<ProductResponse> getAll(int page, int size, String sort);
-    Page<ProductResponse> searchFullText(String keyword, int page, int size);
+    Page<ProductResponse> searchFullText(String keyword, UUID categoryID, int page, int size);
     ProductResponse getById(UUID id);
     ProductResponse update(UUID id, UpdateProductRequest request);
 }
