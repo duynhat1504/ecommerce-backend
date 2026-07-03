@@ -46,6 +46,45 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
+
+    @Query(
+            value = """
+                    SELECT
+                        p.id,
+                        p.name,
+                        p.description,
+                        p.price,
+                        p.stock,
+                        p.image_url,
+                        p.active,
+                        p.category_id,
+                        p.created_at,
+                        p.updated_at
+                    FROM products p
+                    WHERE p.active = true
+                      AND p.category_id = :categoryId
+                      AND p.search_vector @@ websearch_to_tsquery('simple', :keyword)
+                    ORDER BY
+                        ts_rank_cd(
+                            p.search_vector, websearch_to_tsquery('simple', :keyword)
+                        ) DESC,
+                        p.created_at DESC
+                      
+                    """,
+            countQuery = """
+                    SELECT COUNT(*)
+                    FROM products p
+                    WHERE p.active = true
+                      AND p.category_id = :categoryId
+                      AND p.search_vector @@ websearch_to_tsquery('simple', :keyword)
+                    """,
+            nativeQuery = true
+    )
+    Page<Product> searchFullTextByCategory(
+            @Param("keyword") String keyword,
+            @Param("categoryId") UUID categoryId,
+            Pageable pageable
+    );
     boolean existsProductByNameIgnoreCase(String name);
     Optional<Product> findProductByNameIgnoreCase(String name);
 }

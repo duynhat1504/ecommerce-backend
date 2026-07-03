@@ -76,7 +76,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> searchFullText(String keyword, int page, int size) {
+    public Page<ProductResponse> searchFullText(String keyword, UUID categoryId, int page, int size) {
         if (page < 0) {
             throw new BadRequestException("Page index must not be negative");
         }
@@ -93,7 +93,20 @@ public class ProductServiceImpl implements ProductService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<Product> products = productRepository.searchFullText(normalizedKeyword, pageable);
+        Page<Product> products;
+
+        if (categoryId != null) {
+            products = productRepository.searchFullTextByCategory(
+                    normalizedKeyword,
+                    categoryId,
+                    pageable
+            );
+        } else {
+            products = productRepository.searchFullText(
+                    normalizedKeyword,
+                    pageable
+            );
+        }
 
         return products.map(this::toResponse);
     }

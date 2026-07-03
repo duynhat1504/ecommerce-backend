@@ -36,10 +36,11 @@ public class ProductController {
     @GetMapping("/search")
     public ResponseEntity<Page<ProductResponse>> searchFullText(
             @RequestParam String keyword,
+            @RequestParam(required = false) UUID categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(productService.searchFullText(keyword, page, size));
+        return ResponseEntity.ok(productService.searchFullText(keyword, categoryId, page, size));
     }
 
     @GetMapping("/{id}")
