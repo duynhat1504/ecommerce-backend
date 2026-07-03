@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @RestController
@@ -28,9 +29,21 @@ public class ProductController {
     public ResponseEntity<Page<ProductResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sort
+            @RequestParam(defaultValue = "createdAt,desc") String sort,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean active
     ) {
-        return ResponseEntity.ok(productService.getAll(page, size, sort));
+        return ResponseEntity.ok(productService.getAll(
+                page,
+                size,
+                sort,
+                categoryId,
+                minPrice,
+                maxPrice,
+                active)
+        );
     }
 
     @GetMapping("/search")

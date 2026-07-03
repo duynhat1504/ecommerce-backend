@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.UUID;
 
@@ -61,29 +62,36 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAll(int page, int size, String sort) {
-        if (page < 0 || size <= 0 || size > 100) {
-            throw new BadRequestException("Invalid pagination parameters");
-        }
+    public Page<ProductResponse> getAll(
+            int page,
+            int size,
+            String sort,
+            UUID categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean active
+    ) {
+        validatePagination(page, size);
+        validatePriceRange(minPrice, maxPrice);
 
         Sort sortObject = buildSort(sort);
 
         Pageable pageable = PageRequest.of(page, size, sortObject);
 
-        Page<Product> products = productRepository.findAll(pageable);
+        Page<Product> products = productRepository.filterProducts(
+                categoryId,
+                minPrice,
+                maxPrice,
+                active,
+                pageable
+        );
 
         return products.map(this::toResponse);
     }
 
     @Override
     public Page<ProductResponse> searchFullText(String keyword, UUID categoryId, int page, int size) {
-        if (page < 0) {
-            throw new BadRequestException("Page index must not be negative");
-        }
-
-        if (size <= 0 || size > 100) {
-            throw new BadRequestException("Page size must be between 1 and 100");
-        }
+        validatePagination(page, size);
 
         if (keyword == null || keyword.isBlank()) {
             throw new BadRequestException("Keyword must not be blank");
@@ -172,6 +180,30 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return Sort.by(sortDirection, field);
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new BadRequestException("Page index must not be negative");
+        }
+
+        if (size <= 0 || size > 100) {
+            throw new BadRequestException("Page size must be between 1 and 100");
+        }
+    }
+
+    private void validatePriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
+        if (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Min price must not be negative");
+        }
+
+        if (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Max price must not be negative");
+        }
+
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new BadRequestException("Min price must not be greater than max price");
+        }
     }
 
     private ProductResponse toResponse(Product product) {
