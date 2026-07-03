@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,6 +84,22 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     Page<Product> searchFullTextByCategory(
             @Param("keyword") String keyword,
             @Param("categoryId") UUID categoryId,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT p
+            FROM Product p
+            WHERE (:categoryId IS NULL OR p.category.id = :categoryId)
+              AND (:minPrice IS NULL OR p.price >= :minPrice)
+              AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+              AND (:active IS NULL OR p.active = :active)
+            """)
+    Page<Product> filterProducts(
+            @Param("categoryId") UUID categoryId,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("active") Boolean active,
             Pageable pageable
     );
     boolean existsProductByNameIgnoreCase(String name);
