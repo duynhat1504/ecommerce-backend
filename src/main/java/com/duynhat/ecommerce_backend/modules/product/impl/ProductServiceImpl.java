@@ -76,6 +76,29 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ProductResponse> searchFullText(String keyword, int page, int size) {
+        if (page < 0) {
+            throw new BadRequestException("Page index must not be negative");
+        }
+
+        if (size <= 0 || size > 100) {
+            throw new BadRequestException("Page size must be between 1 and 100");
+        }
+
+        if (keyword == null || keyword.isBlank()) {
+            throw new BadRequestException("Keyword must not be blank");
+        }
+
+        String normalizedKeyword = keyword.trim();
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Product> products = productRepository.searchFullText(normalizedKeyword, pageable);
+
+        return products.map(this::toResponse);
+    }
+
+    @Override
     public ProductResponse getById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Product not found"));

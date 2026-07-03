@@ -33,6 +33,15 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAll(page, size, sort));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<Page<ProductResponse>> searchFullText(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(productService.searchFullText(keyword, page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getById(id));
