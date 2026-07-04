@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.product;
 
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import jakarta.validation.Valid;
@@ -10,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
+
 import java.util.UUID;
 
 @RestController
@@ -26,34 +27,8 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt,desc") String sort,
-            @RequestParam(required = false) UUID categoryId,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Boolean active
-    ) {
-        return ResponseEntity.ok(productService.getAll(
-                page,
-                size,
-                sort,
-                categoryId,
-                minPrice,
-                maxPrice,
-                active)
-        );
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<Page<ProductResponse>> searchFullText(
-            @RequestParam String keyword,
-            @RequestParam(required = false) UUID categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(productService.searchFullText(keyword, categoryId, page, size));
+    public ResponseEntity<Page<ProductResponse>> findProducts(@ModelAttribute ProductQueryRequest req) {
+        return ResponseEntity.ok(productService.findProducts(req));
     }
 
     @GetMapping("/{id}")
