@@ -6,6 +6,7 @@ import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
@@ -62,61 +63,44 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAll(
-            int page,
-            int size,
-            String sort,
-            UUID categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Boolean active
-    ) {
+    public Page<ProductResponse> findProducts(ProductQueryRequest req) {
+        int page = req.getPage() == null ? 0 : req.getPage();
+        int size = req.getSize() == null ? 10 : req.getSize();
+
         validatePagination(page, size);
-        validatePriceRange(minPrice, maxPrice);
+        validatePriceRange(req.getMinPrice(), req.getMaxPrice());
 
-        Sort sortObject = buildSort(sort);
+        String keyword = normalizeKeyword(req.getKeyword());
 
-        Pageable pageable = PageRequest.of(page, size, sortObject);
+        Boolean active = req.getActive();
 
-        Page<Product> products = productRepository.filterProducts(
-                categoryId,
-                minPrice,
-                maxPrice,
-                active,
-                pageable
+        if (keyword != null) {
+            Pageable pageable = PageRequest.of(page, size);
+
+            return productRepository.searchFullTextWithFilters(
+                    keyword,
+                    req.getCategoryId(),
+                    req.getMinPrice(),
+                    req.getMaxPrice(),
+                    active,
+                    pageable
+            ).map(this::toResponse);
+        }
+
+        Sort sortObject = buildSort(req.getSort());
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                sortObject
         );
 
-        return products.map(this::toResponse);
-    }
-
-    @Override
-    public Page<ProductResponse> searchFullText(String keyword, UUID categoryId, int page, int size) {
-        validatePagination(page, size);
-
-        if (keyword == null || keyword.isBlank()) {
-            throw new BadRequestException("Keyword must not be blank");
-        }
-
-        String normalizedKeyword = keyword.trim();
-
-        Pageable pageable = PageRequest.of(page, size);
-
-        Page<Product> products;
-
-        if (categoryId != null) {
-            products = productRepository.searchFullTextByCategory(
-                    normalizedKeyword,
-                    categoryId,
-                    pageable
-            );
-        } else {
-            products = productRepository.searchFullText(
-                    normalizedKeyword,
-                    pageable
-            );
-        }
-
-        return products.map(this::toResponse);
+        return productRepository.filterProducts(
+                req.getCategoryId(),
+                req.getMinPrice(),
+                req.getMaxPrice(),
+                active,
+                pageable
+        ).map(this::toResponse);
     }
 
     @Override
@@ -204,6 +188,14 @@ public class ProductServiceImpl implements ProductService {
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
             throw new BadRequestException("Min price must not be greater than max price");
         }
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+
+        return keyword.trim();
     }
 
     private ProductResponse toResponse(Product product) {
