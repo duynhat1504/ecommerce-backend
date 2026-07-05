@@ -1,5 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.product;
 
+import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
+import com.duynhat.ecommerce_backend.common.core.dto.PageResponse;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
@@ -27,8 +29,17 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> findProducts(@ModelAttribute ProductQueryRequest req) {
-        return ResponseEntity.ok(productService.findProducts(req));
+    public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> findProducts(
+            @ModelAttribute ProductQueryRequest req
+    ) {
+        Page<ProductResponse> products = productService.findProducts(req);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get products successfully",
+                        PageResponse.from(products)
+                )
+        );
     }
 
     @GetMapping("/{id}")
