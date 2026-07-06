@@ -1,8 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.user;
 
-import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.user.dto.response.UserResponse;
-import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,8 +17,14 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-        return ResponseEntity.ok(userService.getCurrentUser(authentication));
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
+        UserResponse user = userService.getCurrentUser(authentication);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get current user successfully",
+                        user
+                )
+        );
     }
 
 }
