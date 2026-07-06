@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.category;
 
+import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.category.dto.request.CreateCategoryRequest;
 import com.duynhat.ecommerce_backend.modules.category.dto.request.UpdateCategoryRequest;
 import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryResponse;
@@ -20,25 +21,58 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CreateCategoryRequest req) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> create(
+            @Valid @RequestBody CreateCategoryRequest req
+    ) {
+        CategoryResponse category = categoryService.create(req);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(categoryService.create(req));
+                .body(
+                        ApiResponse.success(
+                                "Create category successfully",
+                                category
+                        )
+                );
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryResponse>> getAll() {
-        return ResponseEntity.ok(categoryService.getAll());
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
+        List<CategoryResponse> categories = categoryService.getAll();
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get categories successfully",
+                        categories
+                )
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(categoryService.getById(id));
+    public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable UUID id) {
+        CategoryResponse category = categoryService.getById(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get category successfully",
+                        category
+                )
+        );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateCategoryRequest req) {
-        return ResponseEntity.ok(categoryService.update(id, req));
+    public ResponseEntity<ApiResponse<CategoryResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateCategoryRequest req
+    ) {
+        CategoryResponse category = categoryService.update(id, req);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Update category successfully",
+                        category
+                )
+        );
     }
 }
 
