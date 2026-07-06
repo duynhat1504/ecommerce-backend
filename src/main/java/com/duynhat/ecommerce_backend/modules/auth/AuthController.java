@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.auth;
 
+import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
@@ -21,13 +22,29 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(req));
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(
+            @RequestBody @Valid RegisterRequest req
+    ) {
+        RegisterResponse register = authService.register(req);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                "Register successfully",
+                                register
+                        )
+                );
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
-        AuthResponse response = authService.login(req);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
+        AuthResponse login = authService.login(req);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Login successfully",
+                        login
+                )
+        );
     }
 }
