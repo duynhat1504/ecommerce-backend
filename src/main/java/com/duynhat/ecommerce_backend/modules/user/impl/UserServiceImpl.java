@@ -1,6 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.user.impl;
 
-import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
 import com.duynhat.ecommerce_backend.modules.user.dto.response.UserResponse;
@@ -27,7 +27,7 @@ public class UserServiceImpl implements UserService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return toResponse(user);
     }
