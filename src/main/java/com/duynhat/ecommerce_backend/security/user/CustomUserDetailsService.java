@@ -1,9 +1,9 @@
-package com.duynhat.ecommerce_backend.security;
+package com.duynhat.ecommerce_backend.security.user;
 
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,7 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (!user.getActive()) {
-            throw new DisabledException("Account is disabled");
+            throw new BadCredentialsException("Invalid email or password");
         }
 
         return new org.springframework.security.core.userdetails.User(

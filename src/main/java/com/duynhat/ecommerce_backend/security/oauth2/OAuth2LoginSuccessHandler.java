@@ -1,4 +1,4 @@
-package com.duynhat.ecommerce_backend.security;
+package com.duynhat.ecommerce_backend.security.oauth2;
 
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
