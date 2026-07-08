@@ -1,8 +1,11 @@
 package com.duynhat.ecommerce_backend.config;
 
-import com.duynhat.ecommerce_backend.security.CustomUserDetailsService;
-import com.duynhat.ecommerce_backend.security.JwtAuthenticationFilter;
-import com.duynhat.ecommerce_backend.security.OAuth2LoginSuccessHandler;
+import com.duynhat.ecommerce_backend.security.handler.CustomAccessDeniedHandler;
+import com.duynhat.ecommerce_backend.security.handler.CustomAuthenticationEntryPoint;
+import com.duynhat.ecommerce_backend.security.user.CustomUserDetailsService;
+import com.duynhat.ecommerce_backend.security.jwt.JwtAuthenticationFilter;
+import com.duynhat.ecommerce_backend.security.oauth2.OAuth2LoginSuccessHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -41,6 +44,12 @@ public class SecurityConfig {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    @Autowired
+    private CustomAccessDeniedHandler customAccessDeniedHandler;
+
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
@@ -65,10 +74,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-                .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2LoginSuccessHandler))
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
+                
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         
