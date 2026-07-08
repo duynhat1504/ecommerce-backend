@@ -1,6 +1,5 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
-import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
@@ -32,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     public RegisterResponse register(RegisterRequest req) {
         String normalizedEmail = req.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new BadRequestException("Invalid email or password");
+            throw new DataIntegrityViolationException("Email already exists");
         }
 
         String passwordHash = passwordEncoder.encode(req.getPassword());
@@ -53,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
                     .role(saved.getRole())
                     .build();
         } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Invalid email or password");
+            throw e;
         }
     }
 
@@ -73,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!user.getActive()) {
-            throw new BadRequestException("Account is disabled");
+            throw new BadCredentialsException("Invalid email or password");
         }
 
         String accessToken = jwtService.generateAccessToken(user.getEmail());

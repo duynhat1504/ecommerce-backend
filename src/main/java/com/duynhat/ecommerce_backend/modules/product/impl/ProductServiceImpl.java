@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.product.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.category.CategoryService;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
@@ -58,7 +59,7 @@ public class ProductServiceImpl implements ProductService {
 
             return toResponse(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Invalid category name");
+            throw e;
         }
     }
 
@@ -106,7 +107,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse getById(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         return toResponse(product);
     }
@@ -114,7 +115,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse update(UUID id, UpdateProductRequest req) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
 

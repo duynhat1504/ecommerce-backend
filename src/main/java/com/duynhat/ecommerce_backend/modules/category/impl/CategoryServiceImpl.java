@@ -1,6 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.category.impl;
 
-import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
 import com.duynhat.ecommerce_backend.modules.category.CategoryService;
 import com.duynhat.ecommerce_backend.modules.category.dto.request.CreateCategoryRequest;
@@ -23,7 +23,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse create(CreateCategoryRequest req) {
         if (categoryRepository.existsCategoryByNameIgnoreCase(req.getName())) {
-            throw new BadRequestException("Category name already exists");
+            throw new DataIntegrityViolationException("Category name already exists");
         }
 
         Category category = Category.builder()
@@ -37,7 +37,7 @@ public class CategoryServiceImpl implements CategoryService {
 
             return toResponse(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Invalid category name");
+            throw e;
         }
     }
 
@@ -62,7 +62,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.findCategoryByNameIgnoreCase(req.getName().trim())
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
-                        throw new BadRequestException("Category name already exists");
+                        throw new DataIntegrityViolationException("Category name already exists");
                     }
                 });
 
@@ -79,13 +79,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category findCategoryById(UUID id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
     @Override
     public Category findCategoryByNameIgnoreCase(String name) {
         return categoryRepository.findCategoryByNameIgnoreCase(name.trim())
-                .orElseThrow(() -> new BadRequestException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
     private CategoryResponse toResponse(Category category) {
