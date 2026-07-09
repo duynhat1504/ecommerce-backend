@@ -4,6 +4,9 @@ import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.category.dto.request.CreateCategoryRequest;
 import com.duynhat.ecommerce_backend.modules.category.dto.request.UpdateCategoryRequest;
 import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,12 +18,18 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/categories")
+@Tag(name = "Category", description = "Category management APIs")
 public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
 
     @PostMapping
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary = "Create category",
+            description = "Create a new category. ADMIN role is required"
+    )
     public ResponseEntity<ApiResponse<CategoryResponse>> create(
             @Valid @RequestBody CreateCategoryRequest req
     ) {
@@ -37,6 +46,10 @@ public class CategoryController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "Get categories",
+            description = "Get all categories"
+    )
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
         List<CategoryResponse> categories = categoryService.getAll();
 
@@ -49,6 +62,10 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
+    @Operation(
+            summary = "Get category by id",
+            description = "Get category detail by product id"
+    )
     public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable UUID id) {
         CategoryResponse category = categoryService.getById(id);
 
@@ -61,6 +78,11 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary = "Update category",
+            description = "Update category by id. ADMIN role is required."
+    )
     public ResponseEntity<ApiResponse<CategoryResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCategoryRequest req
