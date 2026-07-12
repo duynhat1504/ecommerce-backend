@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .securityMatcher(
                         "/swagger-ui/**",
                         "/swagger-ui.html",
-                        "v3/api-docs/**"
+                        "/v3/api-docs/**"
                 )
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
