@@ -116,6 +116,7 @@ public class SecurityConfig {
 
                         // User APIs
                         .requestMatchers("/api/users/me").authenticated()
+                        .requestMatchers("/api/cart/**").authenticated()
 
                         // Các API còn lại bắt buộc đăng nhập
                         .anyRequest().authenticated()
