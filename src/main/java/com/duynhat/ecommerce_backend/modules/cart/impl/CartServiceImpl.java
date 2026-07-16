@@ -19,12 +19,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class CartServiceImpl implements CartService {
 
     @Autowired
@@ -77,8 +79,8 @@ public class CartServiceImpl implements CartService {
 
         if (item == null) {
             item = new CartItem();
-            item.setCart(cart);
             item.setProduct(product);
+            cart.addItem(item);
         }
 
         item.setQuantity(newQuantity);
@@ -118,11 +120,14 @@ public class CartServiceImpl implements CartService {
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
-        CartItem item = cartItemRepository
-                .findByCartIdAndProductId(cart.getId(), productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+        int deletedRows = cartItemRepository.deleteByCartIdAndProductId(
+                cart.getId(),
+                productId
+        );
 
-        cartItemRepository.delete(item);
+        if (deletedRows == 0) {
+            throw new ResourceNotFoundException("Cart item not found");
+        }
     }
 
     @Override
