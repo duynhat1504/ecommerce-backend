@@ -12,7 +12,7 @@ public interface OrderService {
 
     OrderResponse createOrder(CreateOrderRequest request);
     Page<OrderSummaryResponse> getMyOrders(int page, int size);
-//    OrderResponse getMyOrderById(UUID orderId);
-//    Page<OrderSummaryResponse> getAllOrders(int page, int size);
-//    OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request);
+    OrderResponse getMyOrderById(UUID orderId);
+    Page<OrderSummaryResponse> getAllOrders(int page, int size);
+    OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request);
 }

@@ -9,6 +9,7 @@ import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
 import com.duynhat.ecommerce_backend.modules.order.OrderRepository;
 import com.duynhat.ecommerce_backend.modules.order.OrderService;
 import com.duynhat.ecommerce_backend.modules.order.dto.request.CreateOrderRequest;
+import com.duynhat.ecommerce_backend.modules.order.dto.request.UpdateOrderStatusRequest;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderItemResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResponse;
@@ -127,6 +128,50 @@ public class OrderServiceImpl implements OrderService {
                 .map(this::toSummaryResponse);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderSummaryResponse> getAllOrders(int page, int size) {
+        validatePagination(page, size);
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        return orderRepository
+                .findAll(pageable)
+                .map(this::toSummaryResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getMyOrderById(UUID orderId) {
+        User user = getCurrentUser();
+
+        Order order = orderRepository
+                .findDetailByIdAndUserId(orderId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        return toResponse(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest req) {
+        Order order = orderRepository.findDetailById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        OrderStatus currentStatus = order.getStatus();
+        OrderStatus newStatus = req.getStatus();
+
+        validateStatusTransition(currentStatus, newStatus);
+
+        order.setStatus(newStatus);
+
+        return toResponse(orderRepository.save(order));
+    }
+
     private void validateProduct(
             Product product,
             int quantity
@@ -173,6 +218,26 @@ public class OrderServiceImpl implements OrderService {
 
         if (size <= 0 || size > 100) {
             throw new BadRequestException("Page size must be between 1 and 100");
+        }
+    }
+
+    private void validateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
+        if (currentStatus == newStatus) {
+            return;
+        }
+
+        boolean valid = switch (currentStatus) {
+            case PENDING ->
+                newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.CANCELLED;
+            case CONFIRMED ->
+                newStatus == OrderStatus.SHIPPING || newStatus == OrderStatus.CANCELLED;
+            case SHIPPING ->
+                newStatus == OrderStatus.COMPLETED;
+            case COMPLETED, CANCELLED -> false;
+        };
+
+        if (!valid) {
+            throw new BadRequestException("Cannot change order status from " + currentStatus + " to " + newStatus);
         }
     }
 
