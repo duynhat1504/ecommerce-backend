@@ -114,9 +114,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
 
+                        .requestMatchers("/api/admin/orders/**").hasRole("ADMIN")
+
                         // User APIs
                         .requestMatchers("/api/users/me").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
 
                         // Các API còn lại bắt buộc đăng nhập
                         .anyRequest().authenticated()
