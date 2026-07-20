@@ -2,7 +2,6 @@ package com.duynhat.ecommerce_backend.modules.order.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
-import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
@@ -42,9 +41,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private CartRepository cartRepository;
-
-    @Autowired
-    private CartItemRepository cartItemRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -101,8 +97,8 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        cartItemRepository.deleteAllByCartId(cart.getId());
-        cartItemRepository.flush();
+        cart.getItems().clear();
+        cartRepository.flush();
 
         return toResponse(savedOrder);
     }
