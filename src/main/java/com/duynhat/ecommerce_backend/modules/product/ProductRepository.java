@@ -1,13 +1,16 @@
 package com.duynhat.ecommerce_backend.modules.product;
 
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,5 +76,16 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("active") Boolean active,
             Pageable pageable
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT p
+            FROM Product p
+            WHERE p.id IN :productIds
+            ORDER BY p.id ASC
+            """)
+    List<Product> findAllByIdForUpdate(
+            @Param("productIds") List<UUID> productIds
     );
 }
