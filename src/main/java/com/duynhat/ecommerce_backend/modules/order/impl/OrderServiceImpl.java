@@ -2,6 +2,7 @@ package com.duynhat.ecommerce_backend.modules.order.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
+import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
@@ -15,6 +16,7 @@ import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResp
 import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.order.entity.OrderItem;
 import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
+import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -31,7 +33,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -45,17 +52,46 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         User user = getCurrentUser();
 
-        Cart cart = cartRepository.findByUserId(user.getId())
+        Cart cart = cartRepository
+                .findByUserIdForUpdate(user.getId())
                 .orElseThrow(() -> new BadRequestException("Cart is empty"));
 
-        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+        List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+
+        if (cartItems.isEmpty()) {
             throw new BadRequestException("Cart is empty");
         }
+
+        List<UUID> productIds = cartItems.stream()
+                .map(item -> item.getProduct().getId())
+                .distinct()
+                .sorted()
+                .toList();
+
+        List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
+
+        if (lockedProducts.size() != productIds.size()) {
+            throw new ResourceNotFoundException("One or more products no longer exist");
+        }
+
+        Map<UUID, Product> productMap = lockedProducts.stream()
+                .collect(
+                        Collectors.toMap(
+                                Product::getId,
+                                Function.identity()
+                        )
+                );
 
         Order order = new Order();
         order.setOrderCode(generateOrderCode());
@@ -68,7 +104,14 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (CartItem cartItem : cart.getItems()) {
-            Product product = cartItem.getProduct();
+            UUID productId = cartItem.getProduct().getId();
+
+            Product product = productMap.get(productId);
+
+            if (product == null) {
+                throw new ResourceNotFoundException("Product not found: " + productId);
+            }
+
             int quantity = cartItem.getQuantity();
 
             validateProduct(product, quantity);
@@ -97,8 +140,11 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        cart.getItems().clear();
-        cartRepository.flush();
+        int deletedItems = cartItemRepository.deleteAllByCartId(cart.getId());
+
+        if (deletedItems != cartItems.size()) {
+            throw new IllegalStateException("Unable to clear all cart items");
+        }
 
         return toResponse(savedOrder);
     }
@@ -155,13 +201,22 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest req) {
-        Order order = orderRepository.findDetailById(orderId)
+        Order order = orderRepository
+                .findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         OrderStatus currentStatus = order.getStatus();
         OrderStatus newStatus = req.getStatus();
 
+        if (currentStatus == newStatus) {
+            return toResponse(order);
+        }
+
         validateStatusTransition(currentStatus, newStatus);
+
+        if (newStatus == OrderStatus.CANCELLED) {
+            restoreProductStock(order);
+        }
 
         order.setStatus(newStatus);
 
@@ -285,5 +340,45 @@ public class OrderServiceImpl implements OrderService {
                 .quantity(item.getQuantity())
                 .subtotal(item.getSubtotal())
                 .build();
+    }
+
+    protected void restoreProductStock(Order order) {
+        Map<UUID, Integer> quantityByProductId = order.getItems()
+                .stream()
+                .filter(item -> item.getProduct() != null)
+                .collect(
+                        Collectors.groupingBy(
+                                item -> item.getProduct().getId(),
+                                Collectors.summingInt(
+                                        OrderItem::getQuantity
+                                )
+                        )
+                );
+
+        if (quantityByProductId.isEmpty()) return;
+
+        List<UUID> productIds = quantityByProductId
+                .keySet()
+                .stream()
+                .sorted()
+                .toList();
+
+        List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
+
+        Map<UUID, Product> productMap = lockedProducts.stream()
+                .collect(
+                        Collectors.toMap(
+                                Product::getId,
+                                Function.identity()
+                        )
+                );
+
+        for (Map.Entry<UUID, Integer> entry : quantityByProductId.entrySet()) {
+            Product product = productMap.get(entry.getKey());
+
+            if (product == null) continue;
+
+            product.setStock(product.getStock() + entry.getValue());
+        }
     }
 }
