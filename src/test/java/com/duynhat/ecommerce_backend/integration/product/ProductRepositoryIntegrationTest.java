@@ -1,5 +1,6 @@
-package com.duynhat.ecommerce_backend.integration;
+package com.duynhat.ecommerce_backend.integration.product;
 
+import com.duynhat.ecommerce_backend.integration.AbstractIntegrationTest;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
@@ -65,7 +66,7 @@ class ProductRepositoryIntegrationTest extends AbstractIntegrationTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent())
                 .extracting(Product::getName)
-                .containsExactly("Macbook Air M2");
+                .containsExactly("MacBook Air M2");
     }
 
     @Test
