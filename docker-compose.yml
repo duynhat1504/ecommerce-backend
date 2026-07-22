@@ -3,15 +3,15 @@ services:
     image: postgres:16
     container_name: ecommerce-postgres
     environment:
-      POSTGRES_DB: ecommerce_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: ${DB_NAME:-ecommerce_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,10 +27,11 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_USERNAME: postgres
-      DB_PASSWORD: 123456
-      JWT_SECRET: my-super-secret-key-my-super-secret-key-123456
-      JWT_ACCESS_TOKEN_EXPIRATION: 86400000
+      DB_NAME: ${DB_NAME:-ecommerce_db}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-86400000}
       FRONTEND_URL: http://localhost:3000
     depends_on:
       postgres:
