@@ -59,4 +59,13 @@ public class SecurityIntegrationTest extends AbstractIntegrationTest {
                 )
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void getCategories_withoutToken_shouldNotReturn401() throws Exception {
+        mockMvc.perform(
+                get("/api/categories")
+                        .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk());
+    }
 }
