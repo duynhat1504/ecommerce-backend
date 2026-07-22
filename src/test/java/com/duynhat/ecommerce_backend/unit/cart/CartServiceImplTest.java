@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.unit.cart;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
@@ -156,5 +157,72 @@ class CartServiceImplTest {
         }
 
         assertThat(product.getStock()).isEqualTo(originalStock);
+    }
+
+    @Test
+    void addItem_whenProductMissing_shouldThrowNotFound() {
+        AddCartItemRequest request = new AddCartItemRequest();
+        request.setProductId(product.getId());
+        request.setQuantity(1);
+
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
+        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
+        when(productRepository.findById(product.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> cartService.addItem(request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Product not found");
+
+        verify(cartItemRepository, never()).save(any());
+    }
+
+    @Test
+    void addItem_whenProductOutOfStock_shouldThrowBadRequest() {
+        product.setStock(0);
+        AddCartItemRequest request = new AddCartItemRequest();
+        request.setProductId(product.getId());
+        request.setQuantity(1);
+
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
+        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
+        when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
+
+        assertThatThrownBy(() -> cartService.addItem(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Product is out of stock");
+
+        verify(cartItemRepository, never()).save(any());
+    }
+
+    @Test
+    void removeItem_whenItemMissing_shouldThrowNotFound() {
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
+        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
+        when(cartItemRepository.deleteByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(0);
+
+        assertThatThrownBy(() -> cartService.removeItem(product.getId()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Cart item not found");
+    }
+
+    @Test
+    void clearCart_whenCartMissing_shouldDoNothing() {
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
+        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.empty());
+
+        cartService.clearCart();
+
+        verify(cartItemRepository, never()).deleteAllByCartId(any());
+    }
+
+    @Test
+    void getCart_whenUnauthenticated_shouldThrowBadRequest() {
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> cartService.getCart())
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("User is not authenticated");
+
+        verifyNoInteractions(userRepository, cartRepository);
     }
 }
