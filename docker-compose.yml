@@ -20,18 +20,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
+    image: hoduynhat/ecommerce-backend:latest
     container_name: ecommerce-backend
+    restart: unless-stopped
+
     ports:
       - "8080:8080"
-    env_file:
-      - .env
+
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_NAME: ${DB_NAME:-ecommerce_db}
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-ecommerce_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-86400000}
+
       FRONTEND_URL: http://localhost:3000
     depends_on:
       postgres:

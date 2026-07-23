@@ -1,6 +1,8 @@
-target
+target/
 .git
-.idea
+.github/
+.idea/
 *.iml
-logs
+logs/
 .env
+README.md
