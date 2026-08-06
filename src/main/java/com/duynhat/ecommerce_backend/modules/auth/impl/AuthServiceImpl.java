@@ -3,9 +3,12 @@ package com.duynhat.ecommerce_backend.modules.auth.impl;
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
+import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -96,5 +99,17 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         return new LoginResult(authResponse, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public RefreshResult refresh(String rawRefreshToken) {
+        RefreshTokenRotationResult rotationResult = refreshTokenService.rotateRefreshToken(rawRefreshToken);
+
+        String newAccessToken = jwtService.generateAccessToken(rotationResult.user().getEmail());
+
+        RefreshResponse refreshResponse = new RefreshResponse(newAccessToken, "Bearer");
+
+        return new RefreshResult(refreshResponse, rotationResult.refreshToken());
     }
 }

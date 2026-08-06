@@ -2,9 +2,11 @@ package com.duynhat.ecommerce_backend.modules.auth;
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
+import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,10 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 
@@ -85,6 +84,40 @@ public class AuthController {
                 ApiResponse.success(
                         "Login successfully",
                         loginResult.authResponse()
+                )
+        );
+    }
+
+    @PostMapping("/refresh")
+    @Operation(
+            summary = "Refresh access token",
+            description = "Create a new access token and rotate the refresh token"
+    )
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String rawRefreshToken,
+            HttpServletResponse servletResponse
+
+    ) {
+        RefreshResult refreshResult = authService.refresh(rawRefreshToken);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from(
+                        REFRESH_TOKEN_COOKIE,
+                        refreshResult.refreshToken()
+                )
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ofMillis(refreshTokenExpiration))
+                .build();
+
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Refresh token successfully",
+                        refreshResult.refreshResponse()
                 )
         );
     }
