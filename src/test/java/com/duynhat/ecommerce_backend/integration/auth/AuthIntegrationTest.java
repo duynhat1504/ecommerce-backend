@@ -17,8 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
 @AutoConfigureMockMvc
@@ -101,6 +100,9 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
                                         """)
                 )
                 .andExpect(status().isOk())
+                .andExpect(cookie().exists("refresh_token"))
+                .andExpect(cookie().httpOnly("refresh_token", true))
+                .andExpect(cookie().path("refresh_token", "/api/auth"))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Login successfully"))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
