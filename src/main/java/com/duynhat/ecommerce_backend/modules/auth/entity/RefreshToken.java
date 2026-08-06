@@ -77,7 +77,7 @@ public class RefreshToken {
     }
 
     public boolean isActive() {
-        return !isExpired() != !isRevoked();
+        return !isExpired() && !isRevoked();
     }
 
     public void revoke() {

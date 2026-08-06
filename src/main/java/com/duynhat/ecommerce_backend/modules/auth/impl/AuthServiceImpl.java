@@ -1,6 +1,8 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
+import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
@@ -14,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -26,6 +29,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     @Override
     public RegisterResponse register(RegisterRequest req) {
@@ -57,7 +63,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest req) {
+    @Transactional
+    public LoginResult login(LoginRequest req) {
         String normalizedEmail = req.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
@@ -71,13 +78,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        if (!user.getActive()) {
+        if (!Boolean.TRUE.equals(user.getActive())) {
             throw new BadCredentialsException("Invalid email or password");
         }
 
         String accessToken = jwtService.generateAccessToken(user.getEmail());
 
-        return AuthResponse.builder()
+        String refreshToken = refreshTokenService.createRefreshToken(user);
+
+        AuthResponse authResponse =  AuthResponse.builder()
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .id(user.getId())
@@ -85,5 +94,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .build();
+
+        return new LoginResult(authResponse, refreshToken);
     }
 }
