@@ -1,25 +1,37 @@
 package com.duynhat.ecommerce_backend.modules.auth;
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
+
+    private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
 
     @Autowired
     private AuthService authService;
@@ -49,12 +61,30 @@ public class AuthController {
             summary = "Login",
             description = "Authenticate user and return JWT access token"
     )
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
-        AuthResponse login = authService.login(req);
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest req,
+            HttpServletResponse servletResponse
+    ) {
+        LoginResult loginResult = authService.login(req);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE, loginResult.refreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ofMillis(refreshTokenExpiration))
+                .build();
+
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                refreshTokenCookie.toString()
+        );
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Login successfully",
-                        login
+                        loginResult.authResponse()
                 )
         );
     }
