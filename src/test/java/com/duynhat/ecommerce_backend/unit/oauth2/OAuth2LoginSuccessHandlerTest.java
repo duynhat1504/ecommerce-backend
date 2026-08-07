@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.unit.oauth2;
 
+import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -33,6 +34,9 @@ class OAuth2LoginSuccessHandlerTest {
     @Mock
     private OAuth2User oAuth2User;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     private OAuth2LoginSuccessHandler successHandler;
 
     @BeforeEach
@@ -43,6 +47,19 @@ class OAuth2LoginSuccessHandlerTest {
                 "frontendUrl",
                 "http://localhost:5173"
         );
+
+        ReflectionTestUtils.setField(
+                successHandler,
+                "refreshTokenService",
+                refreshTokenService
+        );
+
+        ReflectionTestUtils.setField(
+                successHandler,
+                "refreshTokenExpiration",
+                604800000L
+        );
+
         when(authentication.getPrincipal()).thenReturn(oAuth2User);
     }
 
@@ -60,10 +77,9 @@ class OAuth2LoginSuccessHandlerTest {
                 "google@example.com",
                 "Google User"
         )).thenReturn(user);
-        when(jwtService.generateAccessToken("google@example.com"))
-                .thenReturn("jwt-token");
 
         MockHttpServletResponse response = new MockHttpServletResponse();
+        when(refreshTokenService.createRefreshToken(user)).thenReturn("refresh-token");
         successHandler.onAuthenticationSuccess(
                 new MockHttpServletRequest(),
                 response,
@@ -71,13 +87,16 @@ class OAuth2LoginSuccessHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/oauth2/callback?token=jwt-token");
+                .isEqualTo("http://localhost:5173/oauth2/callback");
+        assertThat(response.getHeader("Set-Cookie"))
+                .contains("refresh_token=refresh-token")
+                .contains("HttpOnly");
         verify(userService).findOrCreateGoogleUser(
                 "google-123",
                 "google@example.com",
                 "Google User"
         );
-        verify(jwtService).generateAccessToken("google@example.com");
+        verify(refreshTokenService).createRefreshToken(user);
     }
 
     @Test
@@ -95,7 +114,7 @@ class OAuth2LoginSuccessHandlerTest {
 
         assertThat(response.getRedirectedUrl())
                 .isEqualTo("http://localhost:5173/login?error=google_login_failed");
-        verifyNoInteractions(userService, jwtService);
+        verifyNoInteractions(userService, jwtService, refreshTokenService);
     }
 
     @Test
@@ -113,6 +132,6 @@ class OAuth2LoginSuccessHandlerTest {
 
         assertThat(response.getRedirectedUrl())
                 .isEqualTo("http://localhost:5173/login?error=google_login_failed");
-        verifyNoInteractions(userService, jwtService);
+        verifyNoInteractions(userService, jwtService, refreshTokenService);
     }
 }
