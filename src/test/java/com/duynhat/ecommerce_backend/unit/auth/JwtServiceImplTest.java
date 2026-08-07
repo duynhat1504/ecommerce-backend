@@ -25,11 +25,20 @@ class JwtServiceImplTest {
     }
 
     @Test
-    void generateAccessToken_shouldContainEmailAndBeValid() {
+    void generateAccessToken_shouldContainEmailJtiAndBeValid() {
         String token = jwtService.generateAccessToken("user@example.com");
 
         assertThat(jwtService.extractEmail(token)).isEqualTo("user@example.com");
+        assertThat(jwtService.extractJti(token)).isNotBlank();
         assertThat(jwtService.isTokenValid(token, "user@example.com")).isTrue();
+    }
+
+    @Test
+    void generateAccessToken_shouldGenerateUniqueJti() {
+        String token1 = jwtService.generateAccessToken("user@example.com");
+        String token2 = jwtService.generateAccessToken("user@example.com");
+
+        assertThat(jwtService.extractJti(token1)).isNotEqualTo(jwtService.extractJti(token2));
     }
 
     @Test
