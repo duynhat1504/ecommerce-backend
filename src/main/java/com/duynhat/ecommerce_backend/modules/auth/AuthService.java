@@ -11,4 +11,5 @@ public interface AuthService {
     RegisterResponse register(RegisterRequest request);
     LoginResult login(LoginRequest request);
     RefreshResult refresh(String rawRefreshToken);
+    void logout(String rawRefreshToken);
 }

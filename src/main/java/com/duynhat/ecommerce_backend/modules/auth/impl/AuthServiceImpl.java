@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
+import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
@@ -111,5 +112,15 @@ public class AuthServiceImpl implements AuthService {
         RefreshResponse refreshResponse = new RefreshResponse(newAccessToken, "Bearer");
 
         return new RefreshResult(refreshResponse, rotationResult.refreshToken());
+    }
+
+    @Override
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new BadRequestException("Refresh token cookie is missing");
+        }
+
+        refreshTokenService.revokeRefreshToken(rawRefreshToken);
     }
 }

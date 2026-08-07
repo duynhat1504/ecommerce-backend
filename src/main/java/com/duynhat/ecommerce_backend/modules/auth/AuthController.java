@@ -121,4 +121,37 @@ public class AuthController {
                 )
         );
     }
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "Logout",
+            description = "Revoke the current refresh token and clear its cookie"
+    )
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(
+                    name = REFRESH_TOKEN_COOKIE,
+                    required = false
+            ) String rawRefreshToken,
+            HttpServletResponse servletResponse
+    ) {
+        authService.logout(rawRefreshToken);
+
+        ResponseCookie deletedRefreshTokenCookie = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, deletedRefreshTokenCookie.toString());
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Logout successfully",
+                        null
+                )
+        );
+    }
 }
