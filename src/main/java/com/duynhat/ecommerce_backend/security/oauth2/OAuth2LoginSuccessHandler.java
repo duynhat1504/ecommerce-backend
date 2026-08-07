@@ -27,9 +27,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private UserService userService;
 
     @Autowired
-    private JwtService jwtService;
-
-    @Autowired
     private RefreshTokenService refreshTokenService;
 
     @Value("${app.frontend-url}")
@@ -43,7 +40,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             JwtService jwtService
     ) {
         this.userService = userService;
-        this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -65,8 +62,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         User savedUser = userService.findOrCreateGoogleUser(googleId, email, fullName);
 
-        String accessToken = jwtService.generateAccessToken(savedUser.getEmail());
-
         String refreshToken = refreshTokenService.createRefreshToken(savedUser);
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from("refresh_token", refreshToken)
@@ -83,8 +78,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
-        response.sendRedirect(buildFrontendRedirect("/oauth2/callback", "token", accessToken));
-
+        response.sendRedirect(frontendUrl + "/oauth2/callback");
     }
 
     private String buildFrontendRedirect(String path, String queryParam, String value) {
