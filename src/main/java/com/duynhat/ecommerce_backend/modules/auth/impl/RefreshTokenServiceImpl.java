@@ -149,6 +149,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return new RefreshTokenRotationResult(user, newRawToken);
     }
 
+    @Override
+    public long deleteExpiredRefreshTokens() {
+        return refreshTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+    }
+
     private String generateRawToken() {
         byte[] randomBytes = new byte[REFRESH_TOKEN_BYTES];
         secureRandom.nextBytes(randomBytes);

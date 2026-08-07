@@ -10,4 +10,5 @@ public interface RefreshTokenService {
     RefreshToken validateRefreshToken(String rawToken);
     void revokeRefreshToken(String rawToken);
     RefreshTokenRotationResult rotateRefreshToken(String rawToken);
+    long deleteExpiredRefreshTokens();
 }
