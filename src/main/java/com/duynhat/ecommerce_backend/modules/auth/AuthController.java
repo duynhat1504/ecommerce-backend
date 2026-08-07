@@ -133,18 +133,25 @@ public class AuthController {
                     name = REFRESH_TOKEN_COOKIE,
                     required = false
             ) String rawRefreshToken,
+            @RequestHeader(
+                    name = HttpHeaders.AUTHORIZATION,
+                    required = false
+            ) String authorizationHeader,
             HttpServletResponse servletResponse
     ) {
-        authService.logout(rawRefreshToken);
+        String accessToken = extractBearerToken(authorizationHeader);
 
-        ResponseCookie deletedRefreshTokenCookie = ResponseCookie
-                .from(REFRESH_TOKEN_COOKIE, "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/api/auth")
-                .maxAge(Duration.ZERO)
-                .build();
+        authService.logout(rawRefreshToken, accessToken);
+
+        ResponseCookie deletedRefreshTokenCookie =
+                ResponseCookie
+                        .from(REFRESH_TOKEN_COOKIE, "")
+                        .httpOnly(true)
+                        .secure(false)
+                        .sameSite("Lax")
+                        .path("/api/auth")
+                        .maxAge(Duration.ZERO)
+                        .build();
 
         servletResponse.addHeader(HttpHeaders.SET_COOKIE, deletedRefreshTokenCookie.toString());
 
@@ -190,5 +197,14 @@ public class AuthController {
                         null
                 )
         );
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null
+                || !authorizationHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        return authorizationHeader.substring(7);
     }
 }
