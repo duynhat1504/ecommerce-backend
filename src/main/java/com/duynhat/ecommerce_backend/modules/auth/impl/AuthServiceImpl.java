@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
@@ -40,6 +41,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Override
     public RegisterResponse register(RegisterRequest req) {
@@ -120,12 +124,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(String rawRefreshToken) {
+    public void logout(String rawRefreshToken, String accessToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new BadRequestException("Refresh token cookie is missing");
         }
 
         refreshTokenService.revokeRefreshToken(rawRefreshToken);
+
+        if (accessToken != null && !accessToken.isBlank()) {
+            accessTokenBlacklistService.blacklist(accessToken);
+        }
     }
 
     @Override
