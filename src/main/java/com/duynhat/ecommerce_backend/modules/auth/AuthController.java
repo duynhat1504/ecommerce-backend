@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -150,6 +151,42 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Logout successfully",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/logout-all")
+    @Operation(
+            summary = "Logout all devices",
+            description = "Revoke all refresh tokens of the current user"
+    )
+    public ResponseEntity<ApiResponse<Void>> logoutAll(
+            Authentication authentication,
+            HttpServletResponse servletResponse
+    ) {
+
+        authService.logoutAll(
+                authentication.getName()
+        );
+
+        ResponseCookie deletedRefreshTokenCookie = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                deletedRefreshTokenCookie.toString()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Logged out from all devices successfully",
                         null
                 )
         );

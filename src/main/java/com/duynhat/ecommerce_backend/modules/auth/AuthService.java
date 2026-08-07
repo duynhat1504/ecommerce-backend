@@ -12,4 +12,5 @@ public interface AuthService {
     LoginResult login(LoginRequest request);
     RefreshResult refresh(String rawRefreshToken);
     void logout(String rawRefreshToken);
+    void logoutAll(String email);
 }

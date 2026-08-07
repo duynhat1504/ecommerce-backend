@@ -13,6 +13,7 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
+import com.duynhat.ecommerce_backend.modules.user.UserService;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import com.duynhat.ecommerce_backend.modules.user.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private UserService userService;
 
     @Override
     public RegisterResponse register(RegisterRequest req) {
@@ -122,5 +126,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         refreshTokenService.revokeRefreshToken(rawRefreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logoutAll(String email) {
+        User user = userService.findByEmail(email);
+
+        refreshTokenService.revokeAllRefreshTokens(user.getId());
     }
 }

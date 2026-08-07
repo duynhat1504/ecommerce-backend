@@ -19,6 +19,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -54,32 +56,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         refreshTokenRepository.save(refreshToken);
         return rawToken;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public RefreshToken validateRefreshToken(String rawToken) {
-        validateRawToken(rawToken);
-
-        String tokenHash = hashToken(rawToken);
-
-        RefreshToken refreshToken = refreshTokenRepository
-                .findByTokenHash(tokenHash)
-                .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
-
-        if (refreshToken.isRevoked()) {
-            throw new BadRequestException("Refresh token has been revoked");
-        }
-
-        if (refreshToken.isExpired()) {
-            throw new BadRequestException("Refresh token has expired");
-        }
-
-        if (!refreshToken.getUser().getActive()) {
-            throw new BadRequestException("User account is inactive");
-        }
-
-        return refreshToken;
     }
 
     @Override
@@ -152,6 +128,14 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public long deleteExpiredRefreshTokens() {
         return refreshTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+    }
+
+    @Override
+    public void revokeAllRefreshTokens(UUID userId) {
+        List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(userId);
+
+        activeTokens.forEach(RefreshToken::revoke);
+        refreshTokenRepository.saveAll(activeTokens);
     }
 
     private String generateRawToken() {
