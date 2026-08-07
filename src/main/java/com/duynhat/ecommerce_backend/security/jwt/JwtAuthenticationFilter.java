@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.security.jwt;
 
+import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.security.user.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -30,6 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private AuthenticationEntryPoint authenticationEntryPoint;
 
+    @Autowired
+    private AccessTokenBlacklistService accessTokenBlacklistService;
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -47,6 +51,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
+            String jti = jwtService.extractJti(token);
+
+            if (accessTokenBlacklistService.isBlacklisted(jti)) {
+                SecurityContextHolder.clearContext();
+
+                authenticationEntryPoint.commence(
+                        request,
+                        response,
+                        new InsufficientAuthenticationException("Access token has been revoked")
+                );
+
+                return;
+            }
+
             String email = jwtService.extractEmail(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
