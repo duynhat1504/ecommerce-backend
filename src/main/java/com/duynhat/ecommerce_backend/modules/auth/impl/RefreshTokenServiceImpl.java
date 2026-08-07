@@ -85,19 +85,21 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public void revokeRefreshToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
-            return;
+            throw new BadRequestException("Refresh token is missing");
         }
 
         String tokenHash = hashToken(rawToken);
 
-        refreshTokenRepository
+        RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHash)
-                .ifPresent(refreshToken -> {
-                    if (!refreshToken.isRevoked()) {
-                        refreshToken.revoke();
-                        refreshTokenRepository.save(refreshToken);
-                    }
-                });
+                .orElseThrow(() ->
+                        new BadRequestException("Invalid refresh token")
+                );
+
+        if (!refreshToken.isRevoked()) {
+            refreshToken.revoke();
+            refreshTokenRepository.save(refreshToken);
+        }
     }
 
     @Override
