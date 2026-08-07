@@ -50,6 +50,11 @@ public class JwtServiceImpl implements JwtService {
         return extractAllClaims(token).getId();
     }
 
+    @Override
+    public Date extractExpiration(String token) {
+        return extractAllClaims(token).getExpiration();
+    }
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
