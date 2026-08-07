@@ -3,6 +3,7 @@ package com.duynhat.ecommerce_backend.modules.auth.impl;
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenRepository;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.auth.entity.RefreshToken;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,19 +85,68 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public void revokeRefreshToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
-            return;
+            throw new BadRequestException("Refresh token is missing");
         }
 
         String tokenHash = hashToken(rawToken);
 
-        refreshTokenRepository
+        RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHash)
-                .ifPresent(refreshToken -> {
-                    if (!refreshToken.isRevoked()) {
-                        refreshToken.revoke();
-                        refreshTokenRepository.save(refreshToken);
-                    }
-                });
+                .orElseThrow(() ->
+                        new BadRequestException("Invalid refresh token")
+                );
+
+        if (!refreshToken.isRevoked()) {
+            refreshToken.revoke();
+            refreshTokenRepository.save(refreshToken);
+        }
+    }
+
+    @Override
+    public RefreshTokenRotationResult rotateRefreshToken(String rawToken) {
+        validateRawToken(rawToken);
+
+        String currentTokenHash = hashToken(rawToken);
+
+        RefreshToken currentToken = refreshTokenRepository
+                .findByTokenHashForUpdate(currentTokenHash)
+                .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
+
+        if (currentToken.isRevoked()) {
+            throw new BadRequestException("Refresh token has been revoked");
+        }
+
+        if (currentToken.isExpired()) {
+            throw new BadRequestException("Refresh token has expired");
+        }
+
+        User user = currentToken.getUser();
+
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BadRequestException("User account is inactive");
+        }
+
+        String newRawToken = generateRawToken();
+        String newTokenHash = hashToken(newRawToken);
+
+        RefreshToken replacementToken = RefreshToken.builder()
+                .user(user)
+                .tokenHash(newTokenHash)
+                .expiresAt(
+                        LocalDateTime.now().plus(
+                                Duration.ofMillis(
+                                        refreshTokenExpiration
+                                )
+                        )
+                )
+                .build();
+
+        refreshTokenRepository.save(replacementToken);
+
+        currentToken.revoke(newTokenHash);
+        refreshTokenRepository.save(currentToken);
+
+        return new RefreshTokenRotationResult(user, newRawToken);
     }
 
     private String generateRawToken() {
