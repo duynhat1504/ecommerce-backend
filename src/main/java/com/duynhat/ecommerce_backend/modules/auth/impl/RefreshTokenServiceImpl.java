@@ -127,7 +127,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         currentToken.revoke(newTokenHash);
         refreshTokenRepository.save(currentToken);
 
-        return new RefreshTokenRotationResult(user, newRawToken);
+        return new RefreshTokenRotationResult(user, newRawToken, currentToken.getSessionId());
     }
 
     @Override

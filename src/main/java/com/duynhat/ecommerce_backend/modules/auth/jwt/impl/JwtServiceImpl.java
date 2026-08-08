@@ -21,13 +21,14 @@ public class JwtServiceImpl implements JwtService {
     private long accessTokenExpiration;
 
     @Override
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(String email, UUID sessionId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("sid", sessionId.toString())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -53,6 +54,13 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public Date extractExpiration(String token) {
         return extractAllClaims(token).getExpiration();
+    }
+
+    @Override
+    public UUID extractSessionId(String token) {
+        String sessionId = extractAllClaims(token).get("sid", String.class);
+
+        return UUID.fromString(sessionId);
     }
 
     private SecretKey getSigningKey() {
