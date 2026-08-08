@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.unit.oauth2;
 
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -15,6 +16,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -78,8 +81,10 @@ class OAuth2LoginSuccessHandlerTest {
                 "Google User"
         )).thenReturn(user);
 
+        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", UUID.randomUUID());
+
         MockHttpServletResponse response = new MockHttpServletResponse();
-        when(refreshTokenService.createRefreshToken(user)).thenReturn("refresh-token");
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
         successHandler.onAuthenticationSuccess(
                 new MockHttpServletRequest(),
                 response,

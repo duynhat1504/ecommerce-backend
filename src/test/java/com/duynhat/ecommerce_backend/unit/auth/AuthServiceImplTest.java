@@ -2,6 +2,7 @@ package com.duynhat.ecommerce_backend.unit.auth;
 
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
@@ -85,11 +86,12 @@ class AuthServiceImplTest {
     void login_withValidUser_shouldReturnToken() {
         LoginRequest request = loginRequest("secret123");
         User user = activeUser();
+        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", UUID.randomUUID());
         when(userRepository.findByEmail("user@example.com"))
                 .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret123", "encoded-password")).thenReturn(true);
         when(jwtService.generateAccessToken("user@example.com")).thenReturn("jwt-token");
-        when(refreshTokenService.createRefreshToken(user)).thenReturn("refresh-token");
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
 
         LoginResult result = authService.login(request);
         AuthResponse response = result.authResponse();

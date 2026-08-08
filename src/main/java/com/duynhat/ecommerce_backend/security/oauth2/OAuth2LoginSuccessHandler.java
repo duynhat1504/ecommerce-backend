@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.security.oauth2;
 
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -62,7 +63,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         User savedUser = userService.findOrCreateGoogleUser(googleId, email, fullName);
 
-        String refreshToken = refreshTokenService.createRefreshToken(savedUser);
+        RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(savedUser);
+        String refreshToken = refreshTokenResult.refreshToken();
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from("refresh_token", refreshToken)
                 .httpOnly(true)
