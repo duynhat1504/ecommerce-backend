@@ -95,9 +95,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        String accessToken = jwtService.generateAccessToken(user.getEmail());
-
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(user);
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), refreshTokenResult.sessionId());
 
         AuthResponse authResponse =  AuthResponse.builder()
                 .accessToken(accessToken)
@@ -116,7 +115,10 @@ public class AuthServiceImpl implements AuthService {
     public RefreshResult refresh(String rawRefreshToken) {
         RefreshTokenRotationResult rotationResult = refreshTokenService.rotateRefreshToken(rawRefreshToken);
 
-        String newAccessToken = jwtService.generateAccessToken(rotationResult.user().getEmail());
+        String newAccessToken = jwtService.generateAccessToken(
+                rotationResult.user().getEmail(),
+                rotationResult.sessionId()
+        );
 
         RefreshResponse refreshResponse = new RefreshResponse(newAccessToken, "Bearer");
 

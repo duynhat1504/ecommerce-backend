@@ -86,11 +86,13 @@ class AuthServiceImplTest {
     void login_withValidUser_shouldReturnToken() {
         LoginRequest request = loginRequest("secret123");
         User user = activeUser();
-        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", UUID.randomUUID());
+
+        UUID sessionId = UUID.randomUUID();
+        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", sessionId);
         when(userRepository.findByEmail("user@example.com"))
                 .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret123", "encoded-password")).thenReturn(true);
-        when(jwtService.generateAccessToken("user@example.com")).thenReturn("jwt-token");
+        when(jwtService.generateAccessToken(user.getEmail(), sessionId)).thenReturn("jwt-token");
         when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
 
         LoginResult result = authService.login(request);
