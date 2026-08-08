@@ -6,6 +6,7 @@ import com.duynhat.ecommerce_backend.modules.auth.AuthService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
@@ -96,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
 
         String accessToken = jwtService.generateAccessToken(user.getEmail());
 
-        String refreshToken = refreshTokenService.createRefreshToken(user);
+        RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(user);
 
         AuthResponse authResponse =  AuthResponse.builder()
                 .accessToken(accessToken)
@@ -107,7 +108,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole())
                 .build();
 
-        return new LoginResult(authResponse, refreshToken);
+        return new LoginResult(authResponse, refreshTokenResult.refreshToken());
     }
 
     @Override

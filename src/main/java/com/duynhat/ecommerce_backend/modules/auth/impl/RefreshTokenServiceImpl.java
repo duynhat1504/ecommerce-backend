@@ -3,6 +3,7 @@ package com.duynhat.ecommerce_backend.modules.auth.impl;
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenRepository;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.auth.entity.RefreshToken;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -37,7 +38,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private long refreshTokenExpiration;
 
     @Override
-    public String createRefreshToken(User user) {
+    public RefreshTokenCreationResult createRefreshToken(User user) {
         if (user == null) {
             throw new IllegalStateException("User must not be null");
         }
@@ -45,8 +46,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         String rawToken = generateRawToken();
         String tokenHash = hashToken(rawToken);
 
+        UUID sessionId = UUID.randomUUID();
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
+                .sessionId(sessionId)
                 .tokenHash(tokenHash)
                 .expiresAt(
                         LocalDateTime.now()
@@ -55,7 +59,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .build();
 
         refreshTokenRepository.save(refreshToken);
-        return rawToken;
+        return new RefreshTokenCreationResult(rawToken, sessionId);
     }
 
     @Override
@@ -107,6 +111,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         RefreshToken replacementToken = RefreshToken.builder()
                 .user(user)
+                .sessionId(currentToken.getSessionId())
                 .tokenHash(newTokenHash)
                 .expiresAt(
                         LocalDateTime.now().plus(
