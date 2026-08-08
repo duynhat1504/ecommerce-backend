@@ -55,6 +55,9 @@ public class RefreshToken {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
+    @Column(name = "session_id", nullable = false)
+    private UUID sessionId;
+
     @Column(name = "replaced_by_token_hash", length = 64)
     private String replacedByTokenHash;
 
