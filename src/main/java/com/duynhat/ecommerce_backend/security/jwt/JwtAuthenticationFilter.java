@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.JwtException;
 import java.io.IOException;
+import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -52,8 +53,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String jti = jwtService.extractJti(token);
+            UUID sessionId = jwtService.extractSessionId(token);
 
-            if (accessTokenBlacklistService.isBlacklisted(jti)) {
+            boolean isAccessTokenBlacklisted = accessTokenBlacklistService.isBlacklisted(jti);
+            boolean isSessionTokenBlacklisted = accessTokenBlacklistService.isSessionBlacklisted(sessionId);
+
+            if (isAccessTokenBlacklisted || isSessionTokenBlacklisted) {
                 SecurityContextHolder.clearContext();
 
                 authenticationEntryPoint.commence(

@@ -63,7 +63,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public void revokeRefreshToken(String rawToken) {
+    public UUID revokeRefreshToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
             throw new BadRequestException("Refresh token is missing");
         }
@@ -80,6 +80,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             refreshToken.revoke();
             refreshTokenRepository.save(refreshToken);
         }
+
+        return refreshToken.getSessionId();
     }
 
     @Override
