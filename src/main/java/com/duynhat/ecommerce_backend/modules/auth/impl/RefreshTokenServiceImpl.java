@@ -1,6 +1,8 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
+import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenCompromiseService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenRepository;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
@@ -16,12 +18,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.sql.Ref;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -33,6 +34,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private RefreshTokenCompromiseService refreshTokenCompromiseService;
+
+    @Autowired
+    private AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
@@ -95,7 +102,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         if (currentToken.isRevoked()) {
-            throw new BadRequestException("Refresh token has been revoked");
+            boolean isRotatedTokenReuse = currentToken.getReplacedByTokenHash() != null;
+
+            refreshTokenCompromiseService.compromiseSession(currentToken.getSessionId());
+
+            accessTokenBlacklistService.blacklistSession(currentToken.getSessionId());
+
+            throw new BadRequestException("Invalid refresh token");
         }
 
         if (currentToken.isExpired()) {
@@ -138,10 +151,26 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public void revokeAllRefreshTokens(UUID userId) {
+    public Set<UUID> revokeAllRefreshTokens(UUID userId) {
         List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(userId);
 
+        Set<UUID> sessionIds = activeTokens.stream()
+                .map(RefreshToken::getSessionId)
+                .collect(Collectors.toSet());
+
         activeTokens.forEach(RefreshToken::revoke);
+        refreshTokenRepository.saveAll(activeTokens);
+
+        return sessionIds;
+    }
+
+    @Override
+    public void revokeSession(UUID sessionId) {
+        List<RefreshToken> activeTokens = refreshTokenRepository
+                .findAllBySessionIdAndRevokedAtIsNull(sessionId);
+
+        activeTokens.forEach(RefreshToken::revoke);
+
         refreshTokenRepository.saveAll(activeTokens);
     }
 
