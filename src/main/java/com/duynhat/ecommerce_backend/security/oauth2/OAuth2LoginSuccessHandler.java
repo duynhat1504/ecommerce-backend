@@ -38,7 +38,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     public OAuth2LoginSuccessHandler(
             UserService userService,
-            JwtService jwtService
+            RefreshTokenService refreshTokenService
     ) {
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
@@ -65,6 +65,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(savedUser);
         String refreshToken = refreshTokenResult.refreshToken();
+
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from("refresh_token", refreshToken)
                 .httpOnly(true)

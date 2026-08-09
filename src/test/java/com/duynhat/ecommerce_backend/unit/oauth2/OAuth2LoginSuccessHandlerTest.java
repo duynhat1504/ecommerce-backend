@@ -44,7 +44,7 @@ class OAuth2LoginSuccessHandlerTest {
 
     @BeforeEach
     void setUp() {
-        successHandler = new OAuth2LoginSuccessHandler(userService, jwtService);
+        successHandler = new OAuth2LoginSuccessHandler(userService, refreshTokenService);
         ReflectionTestUtils.setField(
                 successHandler,
                 "frontendUrl",

@@ -3,11 +3,16 @@ package com.duynhat.ecommerce_backend.integration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest
 @ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
+    private static final int REDIS_PORT = 6379;
 
     @ServiceConnection
     protected static final PostgreSQLContainer POSTGRES =
@@ -16,7 +21,30 @@ public abstract class AbstractIntegrationTest {
                     .withUsername("test")
                     .withPassword("test");
 
+    protected static final GenericContainer<?> REDIS =
+            new GenericContainer<>(
+                    DockerImageName.parse("redis:7.4-alpine")
+            )
+                    .withExposedPorts(REDIS_PORT);
+
+
     static {
         POSTGRES.start();
+        REDIS.start();
+    }
+
+    @DynamicPropertySource
+    static void redisProperties(
+            DynamicPropertyRegistry registry
+    ) {
+        registry.add(
+                "spring.data.redis.host",
+                REDIS::getHost
+        );
+
+        registry.add(
+                "spring.data.redis.port",
+                () -> REDIS.getMappedPort(REDIS_PORT)
+        );
     }
 }
