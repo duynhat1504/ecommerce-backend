@@ -27,6 +27,7 @@ spring:
 jwt:
   secret: test-secret-key-test-secret-key-test-secret-key-123456
   access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
 
 app:
   frontend-url: http://localhost:3000
