@@ -18,10 +18,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -138,11 +136,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public void revokeAllRefreshTokens(UUID userId) {
+    public Set<UUID> revokeAllRefreshTokens(UUID userId) {
         List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(userId);
+
+        Set<UUID> sessionIds = activeTokens.stream()
+                .map(RefreshToken::getSessionId)
+                .collect(Collectors.toSet());
 
         activeTokens.forEach(RefreshToken::revoke);
         refreshTokenRepository.saveAll(activeTokens);
+
+        return sessionIds;
     }
 
     private String generateRawToken() {

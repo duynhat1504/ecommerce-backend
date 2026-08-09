@@ -4,6 +4,7 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreat
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 
+import java.util.Set;
 import java.util.UUID;
 
 public interface RefreshTokenService {
@@ -12,5 +13,5 @@ public interface RefreshTokenService {
     UUID revokeRefreshToken(String rawToken);
     RefreshTokenRotationResult rotateRefreshToken(String rawToken);
     long deleteExpiredRefreshTokens();
-    void revokeAllRefreshTokens(UUID userId);
+    Set<UUID> revokeAllRefreshTokens(UUID userId);
 }

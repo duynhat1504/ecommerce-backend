@@ -25,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -147,6 +148,8 @@ public class AuthServiceImpl implements AuthService {
     public void logoutAll(String email) {
         User user = userService.findByEmail(email);
 
-        refreshTokenService.revokeAllRefreshTokens(user.getId());
+        Set<UUID> sessionIds = refreshTokenService.revokeAllRefreshTokens(user.getId());
+
+        sessionIds.forEach(accessTokenBlacklistService::blacklistSession);
     }
 }
