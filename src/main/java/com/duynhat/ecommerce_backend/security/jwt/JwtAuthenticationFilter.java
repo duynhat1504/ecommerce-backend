@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.security.jwt;
 
+import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.security.user.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.JwtException;
 import java.io.IOException;
+import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -29,6 +31,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    private AccessTokenBlacklistService accessTokenBlacklistService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.equals("/api/auth/register")
+                || path.equals("/api/auth/login")
+                || path.equals("/api/auth/refresh")
+                || path.equals("/api/auth/logout");
+    }
 
     @Override
     protected void doFilterInternal(
@@ -47,6 +62,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
+            String jti = jwtService.extractJti(token);
+            UUID sessionId = jwtService.extractSessionId(token);
+
+            boolean isAccessTokenBlacklisted = accessTokenBlacklistService.isBlacklisted(jti);
+            boolean isSessionTokenBlacklisted = accessTokenBlacklistService.isSessionBlacklisted(sessionId);
+
+            if (isAccessTokenBlacklisted || isSessionTokenBlacklisted) {
+                SecurityContextHolder.clearContext();
+
+                authenticationEntryPoint.commence(
+                        request,
+                        response,
+                        new InsufficientAuthenticationException("Access token has been revoked")
+                );
+
+                return;
+            }
+
             String email = jwtService.extractEmail(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -25,24 +27,40 @@ class JwtServiceImplTest {
     }
 
     @Test
-    void generateAccessToken_shouldContainEmailAndBeValid() {
-        String token = jwtService.generateAccessToken("user@example.com");
+    void generateAccessToken_shouldContainEmailJtiAndBeValid() {
+        UUID sessionId = UUID.randomUUID();
+        String token = jwtService.generateAccessToken("user@example.com", sessionId);
 
         assertThat(jwtService.extractEmail(token)).isEqualTo("user@example.com");
+        assertThat(jwtService.extractJti(token)).isNotBlank();
         assertThat(jwtService.isTokenValid(token, "user@example.com")).isTrue();
     }
 
     @Test
+    void generateAccessToken_shouldGenerateUniqueJti() {
+        UUID sessionId = UUID.randomUUID();
+
+        String token1 = jwtService.generateAccessToken("user@example.com", sessionId);
+        String token2 = jwtService.generateAccessToken("user@example.com", sessionId);
+
+        assertThat(jwtService.extractJti(token1)).isNotEqualTo(jwtService.extractJti(token2));
+        assertThat(jwtService.extractSessionId(token1)).isEqualTo(sessionId);
+        assertThat(jwtService.extractSessionId(token2)).isEqualTo(sessionId);
+    }
+
+    @Test
     void isTokenValid_withDifferentEmail_shouldReturnFalse() {
-        String token = jwtService.generateAccessToken("user@example.com");
+        UUID sessionId = UUID.randomUUID();
+        String token = jwtService.generateAccessToken("user@example.com", sessionId);
 
         assertThat(jwtService.isTokenValid(token, "other@example.com")).isFalse();
     }
 
     @Test
     void expiredToken_shouldBeRejected() {
+        UUID sessionId = UUID.randomUUID();
         ReflectionTestUtils.setField(jwtService, "accessTokenExpiration", -1_000L);
-        String token = jwtService.generateAccessToken("user@example.com");
+        String token = jwtService.generateAccessToken("user@example.com", sessionId);
 
         assertThatThrownBy(() -> jwtService.isTokenValid(token, "user@example.com"))
                 .isInstanceOf(ExpiredJwtException.class);
@@ -50,7 +68,8 @@ class JwtServiceImplTest {
 
     @Test
     void tamperedToken_shouldBeRejected() {
-        String token = jwtService.generateAccessToken("user@example.com");
+        UUID sessionId = UUID.randomUUID();
+        String token = jwtService.generateAccessToken("user@example.com", sessionId);
 
         assertThatThrownBy(() -> jwtService.extractEmail(token + "tampered"))
                 .isInstanceOf(JwtException.class);

@@ -4,12 +4,22 @@ server:
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
 
+auth:
+  refresh-cookie:
+    secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
+    same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
+
 spring:
   config:
     import: optional:file:.env[.properties]
 
   application:
     name: ecommerce-backend
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   datasource:
     url: jdbc:postgresql://localhost:5432/ecommerce_db
@@ -24,7 +34,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -47,6 +57,7 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
 
   #secret: key dùng để ký token
   #access-token-expiration: thời gian sống của token, đơn vị milliseconds
