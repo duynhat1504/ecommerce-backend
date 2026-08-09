@@ -1,6 +1,8 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
+import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenCompromiseService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenRepository;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
@@ -16,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.sql.Ref;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,6 +34,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private RefreshTokenCompromiseService refreshTokenCompromiseService;
+
+    @Autowired
+    private AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
@@ -93,7 +102,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         if (currentToken.isRevoked()) {
-            throw new BadRequestException("Refresh token has been revoked");
+            boolean isRotatedTokenReuse = currentToken.getReplacedByTokenHash() != null;
+
+            refreshTokenCompromiseService.compromiseSession(currentToken.getSessionId());
+
+            accessTokenBlacklistService.blacklistSession(currentToken.getSessionId());
+
+            throw new BadRequestException("Invalid refresh token");
         }
 
         if (currentToken.isExpired()) {
@@ -147,6 +162,16 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         refreshTokenRepository.saveAll(activeTokens);
 
         return sessionIds;
+    }
+
+    @Override
+    public void revokeSession(UUID sessionId) {
+        List<RefreshToken> activeTokens = refreshTokenRepository
+                .findAllBySessionIdAndRevokedAtIsNull(sessionId);
+
+        activeTokens.forEach(RefreshToken::revoke);
+
+        refreshTokenRepository.saveAll(activeTokens);
     }
 
     private String generateRawToken() {

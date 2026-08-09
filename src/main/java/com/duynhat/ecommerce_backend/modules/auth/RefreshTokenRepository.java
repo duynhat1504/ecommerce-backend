@@ -28,4 +28,5 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
             WHERE rt.tokenHash = :tokenHash
             """)
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
+    List<RefreshToken> findAllBySessionIdAndRevokedAtIsNull(UUID sessionId);
 }
