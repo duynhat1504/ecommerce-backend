@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.security.oauth2;
 
+import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
@@ -30,6 +31,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Autowired
     private RefreshTokenService refreshTokenService;
 
+    @Autowired
+    private RefreshTokenCookieProperties cookieProperties;
+
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
@@ -38,10 +42,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     public OAuth2LoginSuccessHandler(
             UserService userService,
-            RefreshTokenService refreshTokenService
+            RefreshTokenService refreshTokenService,
+            RefreshTokenCookieProperties cookieProperties
     ) {
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
+        this.cookieProperties = cookieProperties;
     }
 
     @Override
@@ -69,8 +75,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/api/auth")
                 .maxAge(
                         Duration.ofMillis(

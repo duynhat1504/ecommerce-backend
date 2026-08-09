@@ -4,6 +4,11 @@ server:
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
 
+auth:
+  refresh-cookie:
+    secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
+    same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
+
 spring:
   config:
     import: optional:file:.env[.properties]

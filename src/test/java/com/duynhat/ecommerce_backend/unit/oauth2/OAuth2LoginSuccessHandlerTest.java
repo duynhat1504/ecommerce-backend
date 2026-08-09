@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.unit.oauth2;
 
+import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
@@ -42,19 +43,17 @@ class OAuth2LoginSuccessHandlerTest {
 
     private OAuth2LoginSuccessHandler successHandler;
 
+    private RefreshTokenCookieProperties cookieProperties;
+
     @BeforeEach
     void setUp() {
-        successHandler = new OAuth2LoginSuccessHandler(userService, refreshTokenService);
+        cookieProperties = new RefreshTokenCookieProperties(false, "Lax");
+        successHandler = new OAuth2LoginSuccessHandler(userService, refreshTokenService, cookieProperties);
+
         ReflectionTestUtils.setField(
                 successHandler,
                 "frontendUrl",
                 "http://localhost:5173"
-        );
-
-        ReflectionTestUtils.setField(
-                successHandler,
-                "refreshTokenService",
-                refreshTokenService
         );
 
         ReflectionTestUtils.setField(

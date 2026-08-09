@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.auth;
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
+import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
@@ -36,6 +37,9 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private RefreshTokenCookieProperties cookieProperties;
+
     @PostMapping("/register")
     @Operation(
             summary = "Register",
@@ -70,8 +74,8 @@ public class AuthController {
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, loginResult.refreshToken())
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/api/auth")
                 .maxAge(Duration.ofMillis(refreshTokenExpiration))
                 .build();
@@ -107,8 +111,8 @@ public class AuthController {
                         refreshResult.refreshToken()
                 )
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/api/auth")
                 .maxAge(Duration.ofMillis(refreshTokenExpiration))
                 .build();
@@ -147,8 +151,8 @@ public class AuthController {
                 ResponseCookie
                         .from(REFRESH_TOKEN_COOKIE, "")
                         .httpOnly(true)
-                        .secure(false)
-                        .sameSite("Lax")
+                        .secure(cookieProperties.secure())
+                        .sameSite(cookieProperties.sameSite())
                         .path("/api/auth")
                         .maxAge(Duration.ZERO)
                         .build();
@@ -180,8 +184,8 @@ public class AuthController {
         ResponseCookie deletedRefreshTokenCookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, "")
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/api/auth")
                 .maxAge(Duration.ZERO)
                 .build();
