@@ -414,13 +414,8 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void logoutAll_shouldRevokeAllUserSessions()
-            throws Exception {
-
-        createUser(
-                "logout-all@example.com",
-                "secret123"
-        );
+    void logoutAll_shouldRevokeAllUserSessions() throws Exception {
+        createUser("logout-all@example.com", "secret123");
 
         MvcResult loginResult1 = mockMvc.perform(
                         post("/api/auth/login")
@@ -514,13 +509,13 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
                         post("/api/auth/refresh")
                                 .cookie(refreshCookie1)
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(
                         post("/api/auth/refresh")
                                 .cookie(refreshCookie2)
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -560,7 +555,7 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
                         post("/api/auth/refresh")
                                 .cookie(refreshCookie1)
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
 
         List<RefreshToken> userTokens =
                 refreshTokenRepository.findAll()
