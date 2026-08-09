@@ -25,6 +25,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -132,7 +134,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Refresh token cookie is missing");
         }
 
-        refreshTokenService.revokeRefreshToken(rawRefreshToken);
+        UUID sessionId = refreshTokenService.revokeRefreshToken(rawRefreshToken);
+        accessTokenBlacklistService.blacklistSession(sessionId);
 
         if (accessToken != null && !accessToken.isBlank()) {
             accessTokenBlacklistService.blacklist(accessToken);

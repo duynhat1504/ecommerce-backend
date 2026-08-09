@@ -9,7 +9,7 @@ import java.util.UUID;
 public interface RefreshTokenService {
 
     RefreshTokenCreationResult createRefreshToken(User user);
-    void revokeRefreshToken(String rawToken);
+    UUID revokeRefreshToken(String rawToken);
     RefreshTokenRotationResult rotateRefreshToken(String rawToken);
     long deleteExpiredRefreshTokens();
     void revokeAllRefreshTokens(UUID userId);
