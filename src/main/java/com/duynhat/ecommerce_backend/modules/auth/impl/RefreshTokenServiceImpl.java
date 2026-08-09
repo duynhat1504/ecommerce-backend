@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.modules.auth.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.InvalidTokenException;
 import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenCompromiseService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenRepository;
@@ -80,7 +81,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHash)
                 .orElseThrow(() ->
-                        new BadRequestException("Invalid refresh token")
+                        new InvalidTokenException("Invalid refresh token")
                 );
 
         if (!refreshToken.isRevoked()) {
@@ -99,7 +100,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         RefreshToken currentToken = refreshTokenRepository
                 .findByTokenHashForUpdate(currentTokenHash)
-                .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
+                .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
         if (currentToken.isRevoked()) {
             boolean isRotatedTokenReuse = currentToken.getReplacedByTokenHash() != null;
@@ -108,7 +109,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
             accessTokenBlacklistService.blacklistSession(currentToken.getSessionId());
 
-            throw new BadRequestException("Invalid refresh token");
+            throw new InvalidTokenException("Invalid refresh token");
         }
 
         if (currentToken.isExpired()) {
