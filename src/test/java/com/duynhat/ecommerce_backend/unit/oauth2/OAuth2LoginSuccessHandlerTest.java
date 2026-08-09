@@ -2,6 +2,7 @@ package com.duynhat.ecommerce_backend.unit.oauth2;
 
 import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseCookie;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -41,14 +43,18 @@ class OAuth2LoginSuccessHandlerTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
-    private OAuth2LoginSuccessHandler successHandler;
+    @Mock
+    private RefreshTokenCookieFactory refreshTokenCookieFactory;
 
-    private RefreshTokenCookieProperties cookieProperties;
+    private OAuth2LoginSuccessHandler successHandler;
 
     @BeforeEach
     void setUp() {
-        cookieProperties = new RefreshTokenCookieProperties(false, "Lax");
-        successHandler = new OAuth2LoginSuccessHandler(userService, refreshTokenService, cookieProperties);
+        successHandler = new OAuth2LoginSuccessHandler(
+                        userService,
+                        refreshTokenService,
+                        refreshTokenCookieFactory
+                );
 
         ReflectionTestUtils.setField(
                 successHandler,
@@ -56,18 +62,11 @@ class OAuth2LoginSuccessHandlerTest {
                 "http://localhost:5173"
         );
 
-        ReflectionTestUtils.setField(
-                successHandler,
-                "refreshTokenExpiration",
-                604800000L
-        );
-
         when(authentication.getPrincipal()).thenReturn(oAuth2User);
     }
 
     @Test
-    void onAuthenticationSuccess_withValidGoogleUser_shouldCreateTokenAndRedirect()
-            throws Exception {
+    void onAuthenticationSuccess_withValidGoogleUser_shouldCreateTokenAndRedirect() throws Exception {
         User user = new User();
         user.setEmail("google@example.com");
 
@@ -80,7 +79,25 @@ class OAuth2LoginSuccessHandlerTest {
                 "Google User"
         )).thenReturn(user);
 
-        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", UUID.randomUUID());
+        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult(
+                "refresh-token",
+                UUID.randomUUID()
+        );
+
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from(
+                        "refresh_token",
+                        "refresh-token"
+                )
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .build();
+
+        when(refreshTokenCookieFactory.create("refresh-token")).thenReturn(refreshTokenCookie);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);

@@ -2,6 +2,7 @@ package com.duynhat.ecommerce_backend.security.oauth2;
 
 import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
@@ -32,22 +33,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private RefreshTokenService refreshTokenService;
 
     @Autowired
-    private RefreshTokenCookieProperties cookieProperties;
+    private RefreshTokenCookieFactory refreshTokenCookieFactory;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
-    @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenExpiration;
-
     public OAuth2LoginSuccessHandler(
             UserService userService,
             RefreshTokenService refreshTokenService,
-            RefreshTokenCookieProperties cookieProperties
+            RefreshTokenCookieFactory refreshTokenCookieFactory
     ) {
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
-        this.cookieProperties = cookieProperties;
+        this.refreshTokenCookieFactory = refreshTokenCookieFactory;
     }
 
     @Override
@@ -72,18 +70,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(savedUser);
         String refreshToken = refreshTokenResult.refreshToken();
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(cookieProperties.secure())
-                .sameSite(cookieProperties.sameSite())
-                .path("/api/auth")
-                .maxAge(
-                        Duration.ofMillis(
-                                refreshTokenExpiration
-                        )
-                )
-                .build();
+        ResponseCookie refreshTokenCookie = refreshTokenCookieFactory.create(refreshToken);
 
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
