@@ -4,6 +4,7 @@ import com.duynhat.ecommerce_backend.modules.order.dto.request.CreateOrderReques
 import com.duynhat.ecommerce_backend.modules.order.dto.request.UpdateOrderStatusRequest;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResponse;
+import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 
 import java.util.UUID;
@@ -15,4 +16,5 @@ public interface OrderService {
     OrderResponse getMyOrderById(UUID orderId);
     Page<OrderSummaryResponse> getAllOrders(int page, int size);
     OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request);
+    OrderResponse cancelMyOrder(UUID orderId);
 }

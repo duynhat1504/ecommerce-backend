@@ -44,4 +44,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByIdForUpdate(
             @Param("orderId") UUID orderId
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT o
+        FROM Order o
+        WHERE o.id = :orderId
+          AND o.user.id = :userId
+        """)
+    Optional<Order> findByIdAndUserIdForUpdate(
+            @Param("orderId") UUID orderId,
+            @Param("userId") UUID userId
+    );
 }
