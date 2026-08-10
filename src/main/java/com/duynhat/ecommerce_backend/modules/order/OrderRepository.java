@@ -5,6 +5,7 @@ import com.duynhat.ecommerce_backend.modules.order.dto.request.UpdateOrderStatus
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResponse;
 import com.duynhat.ecommerce_backend.modules.order.entity.Order;
+import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,17 @@ import java.util.UUID;
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     Page<Order> findByUserId(UUID userId, Pageable pageable);
+    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+    Page<Order> findByOrderCodeContainingIgnoreCase(
+            String orderCode,
+            Pageable pageable
+    );
+
+    Page<Order> findByStatusAndOrderCodeContainingIgnoreCase(
+            OrderStatus status,
+            String orderCode,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {
             "items",
