@@ -5,6 +5,7 @@ import com.duynhat.ecommerce_backend.common.core.dto.PageResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.request.UpdateOrderStatusRequest;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderResponse;
 import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResponse;
+import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,10 +29,11 @@ public class AdminOrderController {
     @GetMapping
     @Operation(summary = "Get all orders")
     public ResponseEntity<ApiResponse<PageResponse<OrderSummaryResponse>>> getAllOrders(
+            @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<OrderSummaryResponse> orders = orderService.getAllOrders(page, size);
+        Page<OrderSummaryResponse> orders = orderService.getAllOrders(status, page, size);
 
         return ResponseEntity.ok(
                 ApiResponse.success(

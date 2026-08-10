@@ -172,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderSummaryResponse> getAllOrders(int page, int size) {
+    public Page<OrderSummaryResponse> getAllOrders(OrderStatus status, int page, int size) {
         validatePagination(page, size);
 
         Pageable pageable = PageRequest.of(
@@ -181,9 +181,15 @@ public class OrderServiceImpl implements OrderService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        return orderRepository
-                .findAll(pageable)
-                .map(this::toSummaryResponse);
+        Page<Order> orders;
+
+        if (status == null) {
+            orders = orderRepository.findAll(pageable);
+        } else {
+            orders = orderRepository.findByStatus(status, pageable);
+        }
+
+        return orders.map(this::toSummaryResponse);
     }
 
     @Override
