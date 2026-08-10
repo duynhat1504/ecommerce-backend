@@ -245,6 +245,15 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(orderRepository.save(order));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(UUID orderId) {
+        Order order = orderRepository.findDetailById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        return toResponse(order);
+    }
+
     private void validateProduct(
             Product product,
             int quantity

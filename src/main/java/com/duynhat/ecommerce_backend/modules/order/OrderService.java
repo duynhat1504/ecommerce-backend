@@ -17,4 +17,5 @@ public interface OrderService {
     Page<OrderSummaryResponse> getAllOrders(int page, int size);
     OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request);
     OrderResponse cancelMyOrder(UUID orderId);
+    OrderResponse getOrderById(UUID orderId);
 }
