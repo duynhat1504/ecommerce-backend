@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -58,7 +59,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public  CartResponse addItem(AddCartItemRequest req) {
         User user = getCurrentUser();
-        Cart cart = getOrCreateCart(user);
+        Cart cart = getOrCreateCartForUpdate(user);
 
         Product product = productRepository.findById(req.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -94,7 +95,8 @@ public class CartServiceImpl implements CartService {
     public CartResponse updateItem(UUID productId, UpdateCartItemRequest req) {
         User user = getCurrentUser();
 
-        Cart cart = cartRepository.findByUserId(user.getId())
+        Cart cart = cartRepository
+                .findByUserIdForUpdate(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         CartItem item = cartItemRepository
@@ -117,7 +119,8 @@ public class CartServiceImpl implements CartService {
     public void removeItem(UUID productId) {
         User user = getCurrentUser();
 
-        Cart cart = cartRepository.findByUserId(user.getId())
+        Cart cart = cartRepository
+                .findByUserIdForUpdate(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         int deletedRows = cartItemRepository.deleteByCartIdAndProductId(
@@ -134,8 +137,9 @@ public class CartServiceImpl implements CartService {
     public void clearCart() {
         User user = getCurrentUser();
 
-        cartRepository.findByUserId(user.getId())
-                .ifPresent(cart -> cartItemRepository.deleteAllByCartId(cart.getId()));
+        cartRepository.findByUserIdForUpdate(user.getId())
+                .ifPresent(cart ->
+                        cartItemRepository.deleteAllByCartId(cart.getId()));
     }
 
     private User getCurrentUser() {
@@ -153,11 +157,22 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    private Cart getOrCreateCart(User user) {
-        return cartRepository.findByUserId(user.getId())
+    private Cart getOrCreateCartForUpdate(User user) {
+        Optional<Cart> existingCart = cartRepository.findByUserIdForUpdate(user.getId());
+
+        if (existingCart.isPresent()) {
+            return existingCart.get();
+        }
+
+        User lockedUser = userRepository
+                .findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return cartRepository
+                .findByUserIdForUpdate(user.getId())
                 .orElseGet(() -> {
                     Cart cart = new Cart();
-                    cart.setUser(user);
+                    cart.setUser(lockedUser);
 
                     return cartRepository.save(cart);
                 });
