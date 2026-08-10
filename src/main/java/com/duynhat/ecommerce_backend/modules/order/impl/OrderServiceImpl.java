@@ -223,6 +223,37 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(orderRepository.save(order));
     }
 
+    @Override
+    public OrderResponse cancelMyOrder(UUID orderId) {
+        User user = getCurrentUser();
+
+        Order order = orderRepository.findByIdAndUserIdForUpdate(orderId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return toResponse(order);
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Only pending orders can be cancelled");
+        }
+
+        restoreProductStock(order);
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        return toResponse(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(UUID orderId) {
+        Order order = orderRepository.findDetailById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        return toResponse(order);
+    }
+
     private void validateProduct(
             Product product,
             int quantity

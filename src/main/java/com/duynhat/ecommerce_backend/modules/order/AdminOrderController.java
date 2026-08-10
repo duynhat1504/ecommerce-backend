@@ -56,4 +56,17 @@ public class AdminOrderController {
                 )
         );
     }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get order detail")
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable UUID id) {
+        OrderResponse order = orderService.getOrderById(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get order successfully",
+                        order
+                )
+        );
+    }
 }

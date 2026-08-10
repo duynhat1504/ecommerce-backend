@@ -69,4 +69,17 @@ public class OrderController {
                 )
         );
     }
+
+    @PutMapping("/{id}/cancel")
+    @Operation(summary = "Cancel current user's pending order")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID id) {
+        OrderResponse order = orderService.cancelMyOrder(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Cancel order successfully",
+                        order
+                )
+        );
+    }
 }
