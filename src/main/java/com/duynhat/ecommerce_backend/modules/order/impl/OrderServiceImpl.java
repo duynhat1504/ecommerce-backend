@@ -172,7 +172,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderSummaryResponse> getAllOrders(OrderStatus status, int page, int size) {
+    public Page<OrderSummaryResponse> getAllOrders(
+            OrderStatus status,
+            String orderCode,
+            int page,
+            int size
+    ) {
         validatePagination(page, size);
 
         Pageable pageable = PageRequest.of(
@@ -181,12 +186,26 @@ public class OrderServiceImpl implements OrderService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
+        String normalizedOrderCode =
+                orderCode == null || orderCode.isBlank() ? null : orderCode.trim();
+
         Page<Order> orders;
 
-        if (status == null) {
+        if (status == null && normalizedOrderCode == null) {
             orders = orderRepository.findAll(pageable);
-        } else {
+        } else if (status != null && normalizedOrderCode == null) {
             orders = orderRepository.findByStatus(status, pageable);
+        } else if (status == null) {
+            orders = orderRepository.findByOrderCodeContainingIgnoreCase(
+                    normalizedOrderCode,
+                    pageable
+            );
+        } else {
+            orders = orderRepository.findByStatusAndOrderCodeContainingIgnoreCase(
+                    status,
+                    normalizedOrderCode,
+                    pageable
+            );
         }
 
         return orders.map(this::toSummaryResponse);

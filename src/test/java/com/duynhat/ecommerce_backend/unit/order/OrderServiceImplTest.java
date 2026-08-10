@@ -102,15 +102,24 @@ class OrderServiceImplTest {
     @ParameterizedTest
     @CsvSource(
             value = {
-                    "NULL, -1, 10",
-                    "NULL, 0, 0",
-                    "NULL, 0, 101"
+                    "NULL, NULL, -1, 10",
+                    "NULL, NULL, 0, 0",
+                    "NULL, NULL, 0, 101"
             },
             nullValues = "NULL"
     )
-    void getAllOrders_withInvalidPagination_shouldReject(OrderStatus status, int page, int size) {
-        assertThatThrownBy(() -> orderService.getAllOrders(status, page, size))
-                .isInstanceOf(BadRequestException.class);
+    void getAllOrders_withInvalidPagination_shouldReject(
+            OrderStatus status,
+            String orderCode,
+            int page,
+            int size
+    ) {
+        assertThatThrownBy(() -> orderService.getAllOrders(
+                status,
+                orderCode,
+                page,
+                size)
+        ).isInstanceOf(BadRequestException.class);
 
         verifyNoInteractions(orderRepository);
     }

@@ -24,6 +24,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     Page<Order> findByUserId(UUID userId, Pageable pageable);
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+    Page<Order> findByOrderCodeContainingIgnoreCase(
+            String orderCode,
+            Pageable pageable
+    );
+
+    Page<Order> findByStatusAndOrderCodeContainingIgnoreCase(
+            OrderStatus status,
+            String orderCode,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {
             "items",

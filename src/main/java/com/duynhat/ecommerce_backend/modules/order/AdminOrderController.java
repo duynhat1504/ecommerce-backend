@@ -30,10 +30,16 @@ public class AdminOrderController {
     @Operation(summary = "Get all orders")
     public ResponseEntity<ApiResponse<PageResponse<OrderSummaryResponse>>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String orderCode,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<OrderSummaryResponse> orders = orderService.getAllOrders(status, page, size);
+        Page<OrderSummaryResponse> orders = orderService.getAllOrders(
+                status,
+                orderCode,
+                page,
+                size
+        );
 
         return ResponseEntity.ok(
                 ApiResponse.success(
