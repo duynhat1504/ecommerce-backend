@@ -88,4 +88,14 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     List<Product> findAllByIdForUpdate(
             @Param("productIds") List<UUID> productIds
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT p
+        FROM Product p
+        WHERE p.id = :productId
+        """)
+    Optional<Product> findByIdForUpdate(
+            @Param("productId") UUID productId
+    );
 }
