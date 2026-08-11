@@ -8,6 +8,7 @@ import com.duynhat.ecommerce_backend.modules.inventory.dto.response.InventoryTra
 import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
 import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
+import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -73,12 +74,16 @@ public class InventoryServiceImpl implements InventoryService {
     private InventoryTransactionResponse toResponse(InventoryTransaction transaction) {
         Order order = transaction.getOrder();
 
+        User performedBy = transaction.getPerformedBy();
+
         return InventoryTransactionResponse.builder()
                 .id(transaction.getId())
                 .productId(transaction.getProduct().getId())
                 .productName(transaction.getProduct().getName())
                 .orderId(order == null ? null : order.getId())
                 .orderCode(order == null ? null : order.getOrderCode())
+                .performedById(performedBy == null ? null : performedBy.getId())
+                .performedByEmail(performedBy == null ? null : performedBy.getEmail())
                 .type(transaction.getType())
                 .quantityChange(transaction.getQuantityChange())
                 .stockBefore(transaction.getStockBefore())

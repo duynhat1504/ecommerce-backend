@@ -16,6 +16,8 @@ public class InventoryTransactionResponse {
     private String productName;
     private UUID orderId;
     private String orderCode;
+    private UUID performedById;
+    private String performedByEmail;
     private InventoryTransactionType type;
     private Integer quantityChange;
     private Integer stockBefore;

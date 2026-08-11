@@ -15,12 +15,16 @@ import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryReq
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
+import com.duynhat.ecommerce_backend.modules.user.UserRepository;
+import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private InventoryTransactionRepository inventoryTransactionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
@@ -148,6 +155,8 @@ public class ProductServiceImpl implements ProductService {
             throw new BadRequestException("Stock adjustment must not be zero");
         }
 
+        User performedBy = getCurrentUser();
+
         Product product = productRepository
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -175,6 +184,7 @@ public class ProductServiceImpl implements ProductService {
         transaction.setQuantityChange(req.getQuantity());
         transaction.setStockBefore(stockBefore);
         transaction.setStockAfter(stockAfter);
+        transaction.setPerformedBy(performedBy);
 
         inventoryTransactionRepository.save(transaction);
 
@@ -259,5 +269,23 @@ public class ProductServiceImpl implements ProductService {
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
                 .build();
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(
+                authentication.getPrincipal()
+        )) {
+            throw new BadRequestException("User is not authenticated");
+        }
+
+        return userRepository
+                .findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
