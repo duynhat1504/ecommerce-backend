@@ -91,7 +91,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -118,7 +118,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -142,7 +142,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -165,9 +165,14 @@ class CartServiceImplTest {
         request.setProductId(product.getId());
         request.setQuantity(1);
 
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(product.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
+        when(productRepository.findById(product.getId()))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cartService.addItem(request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -183,9 +188,14 @@ class CartServiceImplTest {
         request.setProductId(product.getId());
         request.setQuantity(1);
 
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
+        when(productRepository.findById(product.getId()))
+                .thenReturn(Optional.of(product));
 
         assertThatThrownBy(() -> cartService.addItem(request))
                 .isInstanceOf(BadRequestException.class)
@@ -196,8 +206,12 @@ class CartServiceImplTest {
 
     @Test
     void removeItem_whenItemMissing_shouldThrowNotFound() {
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
         when(cartItemRepository.deleteByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(0);
 
         assertThatThrownBy(() -> cartService.removeItem(product.getId()))
@@ -207,8 +221,10 @@ class CartServiceImplTest {
 
     @Test
     void clearCart_whenCartMissing_shouldDoNothing() {
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.empty());
 
         cartService.clearCart();
 
