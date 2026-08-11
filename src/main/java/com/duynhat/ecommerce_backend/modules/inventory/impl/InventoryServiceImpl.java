@@ -18,6 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -34,16 +36,22 @@ public class InventoryServiceImpl implements InventoryService {
     public Page<InventoryTransactionResponse> getProductTransactions(
             UUID productId,
             InventoryTransactionType type,
+            LocalDate fromDate,
+            LocalDate toDate,
             int page,
             int size
     ) {
         validatePagination(page, size);
+        validateDateRange(fromDate, toDate);
 
         if (!productRepository.existsById(productId)) {
             throw new ResourceNotFoundException(
                     "Product not found"
             );
         }
+
+        LocalDateTime fromDateTime = fromDate == null ? null : fromDate.atStartOfDay();
+        LocalDateTime toDateExclusive = toDate == null ? null : toDate.plusDays(1).atStartOfDay();
 
         Pageable pageable = PageRequest.of(
                 page,
@@ -54,25 +62,15 @@ public class InventoryServiceImpl implements InventoryService {
                 )
         );
 
-        Page<InventoryTransaction> transactions;
-
-        if (type == null) {
-            transactions = inventoryTransactionRepository
-                            .findByProduct_Id(
-                                    productId,
-                                    pageable
-                            );
-        } else {
-            transactions = inventoryTransactionRepository
-                            .findByProduct_IdAndType(
-                                    productId,
-                                    type,
-                                    pageable
-                            );
-        }
-
-        return transactions.map(this::toResponse);
-   
+        return inventoryTransactionRepository
+                .findByProductWithFilters(
+                        productId,
+                        type,
+                        fromDateTime,
+                        toDateExclusive,
+                        pageable
+                )
+                .map(this::toResponse);
     }
 
     private void validatePagination(int page, int size) {
@@ -109,5 +107,13 @@ public class InventoryServiceImpl implements InventoryService {
                 .reason(transaction.getReason())
                 .createdAt(transaction.getCreatedAt())
                 .build();
+    }
+
+    private void validateDateRange(LocalDate fromDate, LocalDate toDate) {
+        if (fromDate != null
+                && toDate != null
+                && fromDate.isAfter(toDate)) {
+            throw new BadRequestException("From date must not be after to date");
+        }
     }
 }
