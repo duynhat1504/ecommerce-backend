@@ -185,6 +185,7 @@ public class ProductServiceImpl implements ProductService {
         transaction.setStockBefore(stockBefore);
         transaction.setStockAfter(stockAfter);
         transaction.setPerformedBy(performedBy);
+        transaction.setReason(req.getReason().trim());
 
         inventoryTransactionRepository.save(transaction);
 

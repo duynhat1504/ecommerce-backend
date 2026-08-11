@@ -6,6 +6,7 @@ import com.duynhat.ecommerce_backend.modules.inventory.InventoryService;
 import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
 import com.duynhat.ecommerce_backend.modules.inventory.dto.response.InventoryTransactionResponse;
 import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
+import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -32,6 +33,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional(readOnly = true)
     public Page<InventoryTransactionResponse> getProductTransactions(
             UUID productId,
+            InventoryTransactionType type,
             int page,
             int size
     ) {
@@ -52,9 +54,25 @@ public class InventoryServiceImpl implements InventoryService {
                 )
         );
 
-        return inventoryTransactionRepository
-                .findByProduct_Id(productId, pageable)
-                .map(this::toResponse);
+        Page<InventoryTransaction> transactions;
+
+        if (type == null) {
+            transactions = inventoryTransactionRepository
+                            .findByProduct_Id(
+                                    productId,
+                                    pageable
+                            );
+        } else {
+            transactions = inventoryTransactionRepository
+                            .findByProduct_IdAndType(
+                                    productId,
+                                    type,
+                                    pageable
+                            );
+        }
+
+        return transactions.map(this::toResponse);
+   
     }
 
     private void validatePagination(int page, int size) {
