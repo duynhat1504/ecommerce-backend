@@ -249,6 +249,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponse cancelMyOrder(UUID orderId) {
         User user = getCurrentUser();
 
