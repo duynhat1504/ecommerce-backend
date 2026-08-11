@@ -1,7 +1,9 @@
 package com.duynhat.ecommerce_backend.modules.inventory.entity;
 
 import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
+import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
+import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,6 +26,14 @@ public class InventoryTransaction {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "performed_by")
+    private User performedBy;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)

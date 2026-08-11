@@ -116,6 +116,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/admin/orders/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/inventory/**").hasRole("ADMIN")
 
                         // User APIs
                         .requestMatchers("/api/users/me").authenticated()
