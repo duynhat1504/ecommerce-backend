@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.product;
 
+import com.duynhat.ecommerce_backend.modules.product.dto.request.AdjustProductStockRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
@@ -15,4 +16,5 @@ public interface ProductService {
     Page<ProductResponse> findProducts(ProductQueryRequest request);
     ProductResponse getById(UUID id);
     ProductResponse update(UUID id, UpdateProductRequest request);
+    ProductResponse adjustStock(UUID id, AdjustProductStockRequest request);
 }

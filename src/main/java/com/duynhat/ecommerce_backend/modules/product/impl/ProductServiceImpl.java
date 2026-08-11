@@ -6,6 +6,7 @@ import com.duynhat.ecommerce_backend.modules.category.CategoryService;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.AdjustProductStockRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -37,7 +39,7 @@ public class ProductServiceImpl implements ProductService {
             "price",
             "stock",
             "createdAt",
-            "updateAt"
+            "updatedAt"
     );
 
     @Override
@@ -113,8 +115,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse update(UUID id, UpdateProductRequest req) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
@@ -122,7 +125,6 @@ public class ProductServiceImpl implements ProductService {
         product.setName(req.getName());
         product.setDescription(req.getDescription());
         product.setPrice(req.getPrice());
-        product.setStock(req.getStock());
         product.setImageUrl(req.getImageUrl());
         product.setCategory(category);
 
@@ -131,6 +133,32 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return toResponse(productRepository.save(product));
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse adjustStock(UUID id, AdjustProductStockRequest req) {
+        if (req.getQuantity() == 0) {
+            throw new BadRequestException("Stock adjustment must not be zero");
+        }
+
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        int newStock = product.getStock() + req.getQuantity();
+
+        if (newStock < 0) {
+            throw new BadRequestException(
+                    "Stock cannot be negative"
+            );
+        }
+
+        product.setStock(newStock);
+
+        return toResponse(
+                productRepository.save(product)
+        );
     }
 
     private Sort buildSort(String sortPram) {
