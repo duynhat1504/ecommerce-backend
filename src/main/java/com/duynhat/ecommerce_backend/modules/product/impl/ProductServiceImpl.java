@@ -4,6 +4,9 @@ import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.category.CategoryService;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
+import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
+import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
+import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.AdjustProductStockRequest;
@@ -33,6 +36,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private InventoryTransactionRepository inventoryTransactionRepository;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
@@ -146,6 +152,10 @@ public class ProductServiceImpl implements ProductService {
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
+        int stockBefore = product.getStock();
+
+        int stockAfter = stockBefore + req.getQuantity();
+
         int newStock = product.getStock() + req.getQuantity();
 
         if (newStock < 0) {
@@ -154,11 +164,21 @@ public class ProductServiceImpl implements ProductService {
             );
         }
 
-        product.setStock(newStock);
+        product.setStock(stockAfter);
 
-        return toResponse(
-                productRepository.save(product)
-        );
+        productRepository.save(product);
+
+        InventoryTransaction transaction = new InventoryTransaction();
+
+        transaction.setProduct(product);
+        transaction.setType(InventoryTransactionType.ADMIN_ADJUSTMENT);
+        transaction.setQuantityChange(req.getQuantity());
+        transaction.setStockBefore(stockBefore);
+        transaction.setStockAfter(stockAfter);
+
+        inventoryTransactionRepository.save(transaction);
+
+        return toResponse(product);
     }
 
     private Sort buildSort(String sortPram) {
