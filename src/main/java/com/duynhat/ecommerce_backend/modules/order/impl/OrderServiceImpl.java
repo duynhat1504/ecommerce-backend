@@ -6,6 +6,9 @@ import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
+import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
+import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
+import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.order.OrderRepository;
 import com.duynhat.ecommerce_backend.modules.order.OrderService;
 import com.duynhat.ecommerce_backend.modules.order.dto.request.CreateOrderRequest;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +61,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private InventoryTransactionRepository inventoryTransactionRepository;
 
     @Override
     @Transactional
@@ -103,6 +110,8 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
+        List<InventoryTransaction> inventoryTransactions = new ArrayList<>();
+
         for (CartItem cartItem : cart.getItems()) {
             UUID productId = cartItem.getProduct().getId();
 
@@ -133,12 +142,31 @@ public class OrderServiceImpl implements OrderService {
 
             totalAmount = totalAmount.add(subtotal);
 
-            product.setStock(product.getStock() - quantity);
+            int stockBefore = product.getStock();
+
+            int stockAfter = stockBefore - quantity;
+
+            product.setStock(stockAfter);
+
+            InventoryTransaction transaction = new InventoryTransaction();
+
+            transaction.setProduct(product);
+            transaction.setType(InventoryTransactionType.ORDER_CREATED);
+            transaction.setQuantityChange(-quantity);
+            transaction.setStockBefore(stockBefore);
+            transaction.setStockAfter(stockAfter);
+            transaction.setReason("Order created: " + order.getOrderCode());
+
+            inventoryTransactions.add(transaction);
         }
 
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
+
+        inventoryTransactions.forEach(transaction -> transaction.setOrder(savedOrder));
+
+        inventoryTransactionRepository.saveAll(inventoryTransactions);
 
         int deletedItems = cartItemRepository.deleteAllByCartId(cart.getId());
 
@@ -430,12 +458,36 @@ public class OrderServiceImpl implements OrderService {
                         )
                 );
 
+        List<InventoryTransaction> inventoryTransactions = new ArrayList<>();
+
         for (Map.Entry<UUID, Integer> entry : quantityByProductId.entrySet()) {
             Product product = productMap.get(entry.getKey());
 
-            if (product == null) continue;
+            if (product == null) {
+                continue;
+            }
 
-            product.setStock(product.getStock() + entry.getValue());
+            int quantity = entry.getValue();
+
+            int stockBefore = product.getStock();
+
+            int stockAfter = stockBefore + quantity;
+
+            product.setStock(stockAfter);
+
+            InventoryTransaction transaction = new InventoryTransaction();
+
+            transaction.setProduct(product);
+            transaction.setOrder(order);
+            transaction.setType(InventoryTransactionType.ORDER_CANCELLED);
+            transaction.setQuantityChange(quantity);
+            transaction.setStockBefore(stockBefore);
+            transaction.setStockAfter(stockAfter);
+            transaction.setReason("Order cancelled: " + order.getOrderCode());
+
+            inventoryTransactions.add(transaction);
         }
+
+        inventoryTransactionRepository.saveAll(inventoryTransactions);
     }
 }
