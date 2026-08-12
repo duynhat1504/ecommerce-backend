@@ -16,5 +16,5 @@ public class ProductQueryRequest {
     private BigDecimal maxPrice;
     private Integer page = 0;
     private Integer size = 10;
-    private String sort = "createdAt,desc";
+    private String sort;
 }

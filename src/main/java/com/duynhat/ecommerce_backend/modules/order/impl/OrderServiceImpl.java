@@ -112,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<InventoryTransaction> inventoryTransactions = new ArrayList<>();
 
-        for (CartItem cartItem : cart.getItems()) {
+        for (CartItem cartItem : cartItems) {
             UUID productId = cartItem.getProduct().getId();
 
             Product product = productMap.get(productId);

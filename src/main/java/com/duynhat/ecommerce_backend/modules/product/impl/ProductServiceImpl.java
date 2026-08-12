@@ -88,11 +88,29 @@ public class ProductServiceImpl implements ProductService {
         if (keyword != null) {
             Pageable pageable = PageRequest.of(page, size);
 
-            return productRepository.searchFullTextWithFilters(
+            if (req.getSort() == null || req.getSort().isBlank()) {
+                return productRepository
+                        .searchFullTextWithFilters(
+                                keyword,
+                                req.getCategoryId(),
+                                req.getMinPrice(),
+                                req.getMaxPrice(),
+                                pageable
+                        )
+                        .map(this::toResponse);
+            }
+
+            Sort sort = buildSort(req.getSort());
+
+            Sort.Order order = sort.iterator().next();
+
+            return productRepository.searchFullTextWithFiltersAndSort(
                     keyword,
                     req.getCategoryId(),
                     req.getMinPrice(),
                     req.getMaxPrice(),
+                    order.getProperty(),
+                    order.getDirection().name().toLowerCase(),
                     pageable
             ).map(this::toResponse);
         }
