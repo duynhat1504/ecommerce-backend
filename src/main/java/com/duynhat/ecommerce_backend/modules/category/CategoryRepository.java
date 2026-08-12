@@ -4,6 +4,7 @@ import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +13,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     boolean existsCategoryByNameIgnoreCase(String name);
     Optional<Category> findCategoryByNameIgnoreCase(String name);
+    List<Category> findAllByActiveTrue();
+    Optional<Category> findByIdAndActiveTrue(UUID id);
+    List<Category> findAllByActive(Boolean active);
 }

@@ -4,20 +4,26 @@ import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.category.CategoryService;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
+import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
+import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
+import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
+import com.duynhat.ecommerce_backend.modules.user.UserRepository;
+import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -32,35 +38,43 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private InventoryTransactionRepository inventoryTransactionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
             "price",
             "stock",
             "createdAt",
-            "updateAt"
+            "updatedAt"
     );
 
     @Override
     public ProductResponse create(CreateProductRequest req) {
-        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
+        Category category = getActiveCategory(req.getCategoryName());
+
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(req.getDescription());
+
+        String normalizedImageUrl = normalizeNullableText(req.getImageUrl());
 
         Product product = Product.builder()
-                .name(req.getName())
-                .description(req.getDescription())
+                .name(normalizedName)
+                .description(normalizedDescription)
                 .price(req.getPrice())
                 .stock(req.getStock())
-                .imageUrl(req.getImageUrl())
+                .imageUrl(normalizedImageUrl)
                 .category(category)
                 .active(true)
                 .build();
 
-        try {
-            Product saved = productRepository.save(product);
+        Product saved = productRepository.save(product);
 
-            return toResponse(saved);
-        } catch (DataIntegrityViolationException e) {
-            throw e;
-        }
+        return toResponse(saved);
     }
 
     @Override
@@ -73,17 +87,32 @@ public class ProductServiceImpl implements ProductService {
 
         String keyword = normalizeKeyword(req.getKeyword());
 
-        Boolean active = req.getActive();
-
         if (keyword != null) {
             Pageable pageable = PageRequest.of(page, size);
 
-            return productRepository.searchFullTextWithFilters(
+            if (req.getSort() == null || req.getSort().isBlank()) {
+                return productRepository
+                        .searchFullTextWithFilters(
+                                keyword,
+                                req.getCategoryId(),
+                                req.getMinPrice(),
+                                req.getMaxPrice(),
+                                pageable
+                        )
+                        .map(this::toResponse);
+            }
+
+            Sort sort = buildSort(req.getSort());
+
+            Sort.Order order = sort.iterator().next();
+
+            return productRepository.searchFullTextWithFiltersAndSort(
                     keyword,
                     req.getCategoryId(),
                     req.getMinPrice(),
                     req.getMaxPrice(),
-                    active,
+                    order.getProperty(),
+                    order.getDirection().name().toLowerCase(),
                     pageable
             ).map(this::toResponse);
         }
@@ -99,31 +128,31 @@ public class ProductServiceImpl implements ProductService {
                 req.getCategoryId(),
                 req.getMinPrice(),
                 req.getMaxPrice(),
-                active,
                 pageable
         ).map(this::toResponse);
     }
 
     @Override
     public ProductResponse getById(UUID id) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository
+                .findByIdAndActiveTrueAndCategory_ActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         return toResponse(product);
     }
 
     @Override
+    @Transactional
     public ProductResponse update(UUID id, UpdateProductRequest req) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
+        Category category = getActiveCategory(req.getCategoryName());
 
-        product.setName(req.getName());
-        product.setDescription(req.getDescription());
+        product.setName(req.getName().trim());
+        product.setDescription(normalizeNullableText(req.getDescription()));
         product.setPrice(req.getPrice());
-        product.setStock(req.getStock());
-        product.setImageUrl(req.getImageUrl());
+        product.setImageUrl(normalizeNullableText(req.getImageUrl()));
         product.setCategory(category);
 
         if (req.getActive() != null) {
@@ -131,6 +160,94 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return toResponse(productRepository.save(product));
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse adjustStock(UUID id, AdjustProductStockRequest req) {
+        if (req.getQuantity() == 0) {
+            throw new BadRequestException("Stock adjustment must not be zero");
+        }
+
+        User performedBy = getCurrentUser();
+
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        int stockBefore = product.getStock();
+
+        long stockAfterValue = (long) stockBefore + req.getQuantity();
+
+        if (stockAfterValue < 0) {
+            throw new BadRequestException("Stock cannot be negative");
+        }
+
+        if (stockAfterValue > Integer.MAX_VALUE) {
+            throw new BadRequestException("Stock exceeds supported limit");
+        }
+
+        int stockAfter = (int) stockAfterValue;
+
+        product.setStock(stockAfter);
+
+        productRepository.save(product);
+
+        InventoryTransaction transaction = new InventoryTransaction();
+
+        transaction.setProduct(product);
+        transaction.setType(InventoryTransactionType.ADMIN_ADJUSTMENT);
+        transaction.setQuantityChange(req.getQuantity());
+        transaction.setStockBefore(stockBefore);
+        transaction.setStockAfter(stockAfter);
+        transaction.setPerformedBy(performedBy);
+        transaction.setReason(req.getReason().trim());
+
+        inventoryTransactionRepository.save(transaction);
+
+        return toResponse(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getByIdForAdmin(UUID id) {
+        Product product = productRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        return toResponse(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findProductsForAdmin(AdminProductQueryRequest req) {
+        int page = req.getPage() == null ? 0 : req.getPage();
+
+        int size = req.getSize() == null ? 10 : req.getSize();
+
+        validatePagination(page, size);
+
+        Sort sort = buildSort(req.getSort());
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        sort
+                );
+
+        Page<Product> products;
+
+        if (req.getActive() == null) {
+            products = productRepository.findAll(pageable);
+        } else {
+            products = productRepository.findByActive(
+                            req.getActive(),
+                            pageable
+                    );
+        }
+
+        return products.map(this::toResponse);
     }
 
     private Sort buildSort(String sortPram) {
@@ -211,5 +328,43 @@ public class ProductServiceImpl implements ProductService {
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
                 .build();
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(
+                authentication.getPrincipal()
+        )) {
+            throw new BadRequestException("User is not authenticated");
+        }
+
+        return userRepository
+                .findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private Category getActiveCategory(String categoryName) {
+        Category category = categoryService.findCategoryByNameIgnoreCase(categoryName.trim());
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+
+        return category;
+    }
+
+    private String normalizeNullableText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+
+        return normalized.isEmpty() ? null : normalized;
     }
 }

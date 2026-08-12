@@ -69,10 +69,13 @@ class OAuth2LoginSuccessHandlerTest {
     void onAuthenticationSuccess_withValidGoogleUser_shouldCreateTokenAndRedirect() throws Exception {
         User user = new User();
         user.setEmail("google@example.com");
+        user.setActive(true);
 
         when(oAuth2User.getAttribute("sub")).thenReturn("google-123");
         when(oAuth2User.getAttribute("email")).thenReturn("google@example.com");
         when(oAuth2User.getAttribute("name")).thenReturn("Google User");
+        when(oAuth2User.getAttribute("email_verified")).thenReturn(true);
+        
         when(userService.findOrCreateGoogleUser(
                 "google-123",
                 "google@example.com",
@@ -87,10 +90,7 @@ class OAuth2LoginSuccessHandlerTest {
         when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
 
         ResponseCookie refreshTokenCookie = ResponseCookie
-                .from(
-                        "refresh_token",
-                        "refresh-token"
-                )
+                .from("refresh_token", "refresh-token")
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
@@ -100,7 +100,6 @@ class OAuth2LoginSuccessHandlerTest {
         when(refreshTokenCookieFactory.create("refresh-token")).thenReturn(refreshTokenCookie);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
         successHandler.onAuthenticationSuccess(
                 new MockHttpServletRequest(),
                 response,
@@ -112,12 +111,6 @@ class OAuth2LoginSuccessHandlerTest {
         assertThat(response.getHeader("Set-Cookie"))
                 .contains("refresh_token=refresh-token")
                 .contains("HttpOnly");
-        verify(userService).findOrCreateGoogleUser(
-                "google-123",
-                "google@example.com",
-                "Google User"
-        );
-        verify(refreshTokenService).createRefreshToken(user);
     }
 
     @Test

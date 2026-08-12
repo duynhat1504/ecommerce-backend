@@ -14,8 +14,7 @@ public class ProductQueryRequest {
     private UUID categoryId;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
-    private Boolean active;
     private Integer page = 0;
     private Integer size = 10;
-    private String sort = "createdAt,desc";
+    private String sort;
 }

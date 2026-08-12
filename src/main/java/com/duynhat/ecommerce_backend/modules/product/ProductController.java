@@ -2,6 +2,7 @@ package com.duynhat.ecommerce_backend.modules.product;
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.common.core.dto.PageResponse;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.AdjustProductStockRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
@@ -94,6 +95,26 @@ public class ProductController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Update product successfully",
+                        product
+                )
+        );
+    }
+
+    @PostMapping("/{id}/stock-adjustments")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary = "Adjust product stock",
+            description = "Increase or decrease product stock. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<ProductResponse>> adjustStock(
+            @PathVariable UUID id,
+            @Valid @RequestBody AdjustProductStockRequest req
+    ) {
+        ProductResponse product = productService.adjustStock(id, req);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Adjust product stock successfully",
                         product
                 )
         );

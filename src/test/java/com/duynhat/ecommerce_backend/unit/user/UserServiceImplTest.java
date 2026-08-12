@@ -52,18 +52,20 @@ class UserServiceImplTest {
 
         assertThat(result).isSameAs(existingUser);
         assertThat(result.getEmail()).isEqualTo("existing@example.com");
-        verify(userRepository, never()).findByEmail(any());
+        verify(userRepository, never()).findByEmailIgnoreCaseForUpdate(any());
         verify(passwordEncoder, never()).encode(any());
     }
 
     @Test
     void findOrCreateGoogleUser_whenEmailExists_shouldLinkGoogleAccount() {
         User existingUser = user("local@example.com", "");
+
         when(userRepository.findByGoogleId("google-123"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("local@example.com"))
+        when(userRepository.findByEmailIgnoreCaseForUpdate("local@example.com"))
                 .thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(existingUser);
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.findOrCreateGoogleUser(
                 "google-123",
@@ -80,7 +82,7 @@ class UserServiceImplTest {
     void findOrCreateGoogleUser_whenUserDoesNotExist_shouldCreateActiveUser() {
         when(userRepository.findByGoogleId("google-123"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("new@example.com"))
+        when(userRepository.findByEmailIgnoreCaseForUpdate("new@example.com"))
                 .thenReturn(Optional.empty());
         when(passwordEncoder.encode(any())).thenReturn("encoded-random-password");
         when(userRepository.save(any(User.class)))

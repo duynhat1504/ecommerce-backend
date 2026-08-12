@@ -44,19 +44,19 @@ class ProductServiceImplTest {
         request.setSize(5);
 
         when(productRepository.searchFullTextWithFilters(
-                eq("macbook air"), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)
+                eq("macbook air"), isNull(), isNull(), isNull(), any(Pageable.class)
         )).thenReturn(Page.empty());
 
         productService.findProducts(request);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(productRepository).searchFullTextWithFilters(
-                eq("macbook air"), isNull(), isNull(), isNull(), isNull(), pageableCaptor.capture()
+                eq("macbook air"), isNull(), isNull(), isNull(), pageableCaptor.capture()
         );
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
         assertThat(pageableCaptor.getValue().getSort().isUnsorted()).isTrue();
-        verify(productRepository, never()).filterProducts(any(), any(), any(), any(), any());
+        verify(productRepository, never()).filterProducts(any(), any(), any(), any());
     }
 
     @Test
@@ -66,21 +66,21 @@ class ProductServiceImplTest {
         request.setSort(null);
 
         when(productRepository.filterProducts(
-                isNull(), isNull(), isNull(), isNull(), any(Pageable.class)
+                isNull(), isNull(), isNull(), any(Pageable.class)
         )).thenReturn(Page.empty());
 
         productService.findProducts(request);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(productRepository).filterProducts(
-                isNull(), isNull(), isNull(), isNull(), pageableCaptor.capture()
+                isNull(), isNull(), isNull(), pageableCaptor.capture()
         );
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt"))
                 .isNotNull()
                 .extracting(order -> order.getDirection().name())
                 .isEqualTo("DESC");
         verify(productRepository, never()).searchFullTextWithFilters(
-                any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any()
         );
     }
 

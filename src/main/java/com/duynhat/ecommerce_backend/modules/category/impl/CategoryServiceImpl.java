@@ -22,28 +22,30 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse create(CreateCategoryRequest req) {
-        if (categoryRepository.existsCategoryByNameIgnoreCase(req.getName())) {
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(
+                req.getDescription());
+
+        if (categoryRepository.existsCategoryByNameIgnoreCase(normalizedName)) {
             throw new DataIntegrityViolationException("Category name already exists");
         }
 
         Category category = Category.builder()
-                .name(req.getName())
-                .description(req.getDescription())
+                .name(normalizedName)
+                .description(normalizedDescription)
                 .active(true)
                 .build();
 
-        try {
-            Category saved = categoryRepository.save(category);
+        Category saved = categoryRepository.save(category);
 
-            return toResponse(saved);
-        } catch (DataIntegrityViolationException e) {
-            throw e;
-        }
+        return toResponse(saved);
     }
 
     @Override
     public List<CategoryResponse> getAll() {
-        return categoryRepository.findAll()
+        return categoryRepository
+                .findAllByActiveTrue()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -51,7 +53,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getById(UUID id) {
-        Category category = findCategoryById(id);
+        Category category = categoryRepository
+                .findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
         return toResponse(category);
     }
 
@@ -59,15 +64,21 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse update(UUID id, UpdateCategoryRequest req) {
         Category category = findCategoryById(id);
 
-        categoryRepository.findCategoryByNameIgnoreCase(req.getName().trim())
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(req.getDescription());
+
+        categoryRepository
+                .findCategoryByNameIgnoreCase(normalizedName)
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
                         throw new DataIntegrityViolationException("Category name already exists");
                     }
                 });
 
-        category.setName(req.getName());
-        category.setDescription(req.getDescription());
+        category.setName(normalizedName);
+
+        category.setDescription(normalizedDescription);
 
         if (req.getActive() != null) {
             category.setActive(req.getActive());
@@ -84,8 +95,34 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category findCategoryByNameIgnoreCase(String name) {
-        return categoryRepository.findCategoryByNameIgnoreCase(name.trim())
+        return categoryRepository
+                .findCategoryByNameIgnoreCase(name.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+    }
+
+    @Override
+    public List<CategoryResponse> getAllForAdmin(Boolean active) {
+        List<Category> categories;
+
+        if (active == null) {
+            categories = categoryRepository.findAll();
+        } else {
+            categories = categoryRepository.findAllByActive(active);
+        }
+
+        return categories
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public CategoryResponse getByIdForAdmin(UUID id) {
+        Category category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        return toResponse(category);
     }
 
     private CategoryResponse toResponse(Category category) {
@@ -95,5 +132,15 @@ public class CategoryServiceImpl implements CategoryService {
                 .description(category.getDescription())
                 .active(category.getActive())
                 .build();
+    }
+
+    private String normalizeNullableText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+
+        return normalized.isEmpty() ? null : normalized;
     }
 }

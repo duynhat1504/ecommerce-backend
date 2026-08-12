@@ -18,39 +18,54 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @Query(
             value = """
-                    SELECT
-                        p.id,
-                        p.name,
-                        p.description,
-                        p.price,
-                        p.stock,
-                        p.image_url,
-                        p.active,
-                        p.category_id,
-                        p.created_at,
-                        p.updated_at
-                    FROM products p
-                    WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
-                      AND (:minPrice IS NULL OR p.price >= :minPrice)
-                      AND (:maxPrice IS NULL OR p.price <= :maxPrice)
-                      AND (:active IS NULL OR p.active = :active)
-                      AND p.search_vector @@ websearch_to_tsquery('simple', :keyword)
-                    ORDER BY
-                        ts_rank_cd(
-                            p.search_vector, websearch_to_tsquery('simple', :keyword)
-                        ) DESC,
-                        p.created_at DESC
-                      
-                    """,
+                SELECT
+                    p.id,
+                    p.name,
+                    p.description,
+                    p.price,
+                    p.stock,
+                    p.image_url,
+                    p.active,
+                    p.category_id,
+                    p.created_at,
+                    p.updated_at
+                FROM products p
+                JOIN categories c
+                    ON c.id = p.category_id
+                WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
+                  AND (:minPrice IS NULL OR p.price >= :minPrice)
+                  AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                  AND p.active = true
+                  AND c.active = true
+                  AND p.search_vector @@ websearch_to_tsquery(
+                        'simple',
+                        :keyword
+                  )
+                ORDER BY
+                    ts_rank_cd(
+                        p.search_vector,
+                        websearch_to_tsquery(
+                            'simple',
+                            :keyword
+                        )
+                    ) DESC,
+                    p.created_at DESC
+                """,
             countQuery = """
-                    SELECT COUNT(*)
-                    FROM products p
-                    WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
-                      AND (:minPrice IS NULL OR p.price >= :minPrice)
-                      AND (:maxPrice IS NULL OR p.price <= :maxPrice)
-                      AND (:active IS NULL OR p.active = :active)
-                      AND p.search_vector @@ websearch_to_tsquery('simple', :keyword)
-                    """,
+                SELECT COUNT(*)
+                FROM products p
+                JOIN categories c
+                    ON c.id = p.category_id
+                WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
+                  AND (:minPrice IS NULL OR p.price >= :minPrice)
+                  AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                  AND p.active = true
+                  AND c.active = true
+                  AND p.search_vector @@ websearch_to_tsquery(
+                        'simple',
+                        :keyword
+                  )
+                """,
             nativeQuery = true
     )
     Page<Product> searchFullTextWithFilters(
@@ -58,7 +73,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             @Param("categoryId") UUID categoryId,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
-            @Param("active") Boolean active,
             Pageable pageable
     );
 
@@ -68,13 +82,13 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             WHERE (:categoryId IS NULL OR p.category.id = :categoryId)
               AND (:minPrice IS NULL OR p.price >= :minPrice)
               AND (:maxPrice IS NULL OR p.price <= :maxPrice)
-              AND (:active IS NULL OR p.active = :active)
+              AND p.active = true
+              AND p.category.active = true
             """)
     Page<Product> filterProducts(
             @Param("categoryId") UUID categoryId,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
-            @Param("active") Boolean active,
             Pageable pageable
     );
 
@@ -87,5 +101,133 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             """)
     List<Product> findAllByIdForUpdate(
             @Param("productIds") List<UUID> productIds
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT p
+        FROM Product p
+        WHERE p.id = :productId
+        """)
+    Optional<Product> findByIdForUpdate(
+            @Param("productId") UUID productId
+    );
+
+    Optional<Product> findByIdAndActiveTrueAndCategory_ActiveTrue(UUID id);
+    Page<Product> findByActive (Boolean active, Pageable pageable);
+
+    @Query(
+            value = """
+                SELECT
+                    p.id,
+                    p.name,
+                    p.description,
+                    p.price,
+                    p.stock,
+                    p.image_url,
+                    p.active,
+                    p.category_id,
+                    p.created_at,
+                    p.updated_at
+                FROM products p
+                JOIN categories c
+                    ON c.id = p.category_id
+                WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
+                  AND (:minPrice IS NULL OR p.price >= :minPrice)
+                  AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                  AND p.active = true
+                  AND c.active = true
+                  AND p.search_vector @@ websearch_to_tsquery(
+                        'simple',
+                        :keyword
+                  )
+                ORDER BY
+                    CASE
+                        WHEN :sortField = 'name'
+                            AND :sortDirection = 'asc'
+                        THEN p.name
+                    END ASC,
+
+                    CASE
+                        WHEN :sortField = 'name'
+                            AND :sortDirection = 'desc'
+                        THEN p.name
+                    END DESC,
+
+                    CASE
+                        WHEN :sortField = 'price'
+                            AND :sortDirection = 'asc'
+                        THEN p.price
+                    END ASC,
+
+                    CASE
+                        WHEN :sortField = 'price'
+                            AND :sortDirection = 'desc'
+                        THEN p.price
+                    END DESC,
+
+                    CASE
+                        WHEN :sortField = 'stock'
+                            AND :sortDirection = 'asc'
+                        THEN p.stock
+                    END ASC,
+
+                    CASE
+                        WHEN :sortField = 'stock'
+                            AND :sortDirection = 'desc'
+                        THEN p.stock
+                    END DESC,
+
+                    CASE
+                        WHEN :sortField = 'createdAt'
+                            AND :sortDirection = 'asc'
+                        THEN p.created_at
+                    END ASC,
+
+                    CASE
+                        WHEN :sortField = 'createdAt'
+                            AND :sortDirection = 'desc'
+                        THEN p.created_at
+                    END DESC,
+
+                    CASE
+                        WHEN :sortField = 'updatedAt'
+                            AND :sortDirection = 'asc'
+                        THEN p.updated_at
+                    END ASC,
+
+                    CASE
+                        WHEN :sortField = 'updatedAt'
+                            AND :sortDirection = 'desc'
+                        THEN p.updated_at
+                    END DESC,
+
+                    p.created_at DESC
+                """,
+            countQuery = """
+                SELECT COUNT(*)
+                FROM products p
+                JOIN categories c
+                    ON c.id = p.category_id
+                WHERE (:categoryId IS NULL OR p.category_id = :categoryId)
+                  AND (:minPrice IS NULL OR p.price >= :minPrice)
+                  AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+                  AND p.active = true
+                  AND c.active = true
+                  AND p.search_vector @@ websearch_to_tsquery(
+                        'simple',
+                        :keyword
+                  )
+                """,
+            nativeQuery = true
+    )
+    Page<Product> searchFullTextWithFiltersAndSort(
+            @Param("keyword") String keyword,
+            @Param("categoryId") UUID categoryId,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("sortField") String sortField,
+            @Param("sortDirection") String sortDirection,
+            Pageable pageable
     );
 }

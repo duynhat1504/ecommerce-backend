@@ -7,14 +7,13 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-@Data
 @Getter
 @Setter
 public class LoginRequest {
 
     @NotBlank(message = "Email must not be blank")
     @Email(message = "Email is invalid")
-    @Size(max = 255, message = "Email must be mos")
+    @Size(max = 100, message = "Email must be mos")
     private String email;
 
     @NotBlank(message = "Password must not be blank")

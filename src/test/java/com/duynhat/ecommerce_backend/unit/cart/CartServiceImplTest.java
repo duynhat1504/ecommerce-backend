@@ -7,6 +7,7 @@ import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.impl.CartServiceImpl;
+import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +52,7 @@ class CartServiceImplTest {
     private User user;
     private Cart cart;
     private Product product;
+    private Category category;
 
     @BeforeEach
     void setUp() {
@@ -61,11 +64,18 @@ class CartServiceImplTest {
         cart.setId(UUID.randomUUID());
         cart.setUser(user);
 
+        category = new Category();
+        category.setId(UUID.randomUUID());
+        category.setName("Laptop");
+        category.setActive(true);
+
         product = new Product();
         product.setId(UUID.randomUUID());
         product.setName("Macbook Air M2");
         product.setActive(true);
         product.setStock(5);
+        product.setPrice(BigDecimal.valueOf(1000));
+        product.setCategory(category);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
@@ -91,7 +101,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -118,7 +128,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -142,7 +152,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
                 .thenReturn(Optional.of(user));
 
-        when(cartRepository.findByUserId(user.getId()))
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
         when(productRepository.findById(product.getId()))
@@ -165,9 +175,14 @@ class CartServiceImplTest {
         request.setProductId(product.getId());
         request.setQuantity(1);
 
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(product.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
+        when(productRepository.findById(product.getId()))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cartService.addItem(request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -183,9 +198,14 @@ class CartServiceImplTest {
         request.setProductId(product.getId());
         request.setQuantity(1);
 
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
+        when(productRepository.findById(product.getId()))
+                .thenReturn(Optional.of(product));
 
         assertThatThrownBy(() -> cartService.addItem(request))
                 .isInstanceOf(BadRequestException.class)
@@ -196,8 +216,12 @@ class CartServiceImplTest {
 
     @Test
     void removeItem_whenItemMissing_shouldThrowNotFound() {
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.of(cart));
+
         when(cartItemRepository.deleteByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(0);
 
         assertThatThrownBy(() -> cartService.removeItem(product.getId()))
@@ -207,8 +231,10 @@ class CartServiceImplTest {
 
     @Test
     void clearCart_whenCartMissing_shouldDoNothing() {
-        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com")).thenReturn(Optional.of(user));
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("usertest@gmail.com"))
+                .thenReturn(Optional.of(user));
+        when(cartRepository.findByUserIdForUpdate(user.getId()))
+                .thenReturn(Optional.empty());
 
         cartService.clearCart();
 
