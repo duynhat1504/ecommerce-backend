@@ -21,4 +21,6 @@ public class CartItemResponse {
     private Integer quantity;
     private BigDecimal subtotal;
     private Integer availableStock;
+    private Boolean available;
+    private String unavailableReason;
 }

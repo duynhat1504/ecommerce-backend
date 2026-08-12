@@ -308,12 +308,17 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(order);
     }
 
-    private void validateProduct(
-            Product product,
-            int quantity
-    ) {
+    private void validateProduct(Product product, int quantity) {
         if (!Boolean.TRUE.equals(product.getActive())) {
             throw new BadRequestException("Product is not available: " + product.getName());
+        }
+
+        if (!Boolean.TRUE.equals(
+                product
+                        .getCategory()
+                        .getActive()
+        )) {
+            throw new BadRequestException("Product category is not available: " + product.getName());
         }
 
         if (product.getStock() == null || product.getStock() < quantity) {

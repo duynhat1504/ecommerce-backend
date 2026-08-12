@@ -7,6 +7,7 @@ import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.impl.CartServiceImpl;
+import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +52,7 @@ class CartServiceImplTest {
     private User user;
     private Cart cart;
     private Product product;
+    private Category category;
 
     @BeforeEach
     void setUp() {
@@ -61,11 +64,18 @@ class CartServiceImplTest {
         cart.setId(UUID.randomUUID());
         cart.setUser(user);
 
+        category = new Category();
+        category.setId(UUID.randomUUID());
+        category.setName("Laptop");
+        category.setActive(true);
+
         product = new Product();
         product.setId(UUID.randomUUID());
         product.setName("Macbook Air M2");
         product.setActive(true);
         product.setStock(5);
+        product.setPrice(BigDecimal.valueOf(1000));
+        product.setCategory(category);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
