@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +30,11 @@ class JwtServiceImplTest {
     @Test
     void generateAccessToken_shouldContainEmailJtiAndBeValid() {
         UUID sessionId = UUID.randomUUID();
-        String token = jwtService.generateAccessToken("user@example.com", sessionId);
+        String token = jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                LocalDateTime.now().plusDays(7)
+        );
 
         assertThat(jwtService.extractEmail(token)).isEqualTo("user@example.com");
         assertThat(jwtService.extractJti(token)).isNotBlank();
@@ -40,8 +45,16 @@ class JwtServiceImplTest {
     void generateAccessToken_shouldGenerateUniqueJti() {
         UUID sessionId = UUID.randomUUID();
 
-        String token1 = jwtService.generateAccessToken("user@example.com", sessionId);
-        String token2 = jwtService.generateAccessToken("user@example.com", sessionId);
+        String token1 = jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                LocalDateTime.now().plusDays(7)
+        );
+        String token2 = jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                LocalDateTime.now().plusDays(7)
+        );
 
         assertThat(jwtService.extractJti(token1)).isNotEqualTo(jwtService.extractJti(token2));
         assertThat(jwtService.extractSessionId(token1)).isEqualTo(sessionId);
@@ -51,25 +64,43 @@ class JwtServiceImplTest {
     @Test
     void isTokenValid_withDifferentEmail_shouldReturnFalse() {
         UUID sessionId = UUID.randomUUID();
-        String token = jwtService.generateAccessToken("user@example.com", sessionId);
+        String token = jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                LocalDateTime.now().plusDays(7)
+        );
 
         assertThat(jwtService.isTokenValid(token, "other@example.com")).isFalse();
     }
 
     @Test
-    void expiredToken_shouldBeRejected() {
+    void generateAccessToken_whenExpirationAlreadyPassed_shouldReject() {
         UUID sessionId = UUID.randomUUID();
-        ReflectionTestUtils.setField(jwtService, "accessTokenExpiration", -1_000L);
-        String token = jwtService.generateAccessToken("user@example.com", sessionId);
 
-        assertThatThrownBy(() -> jwtService.isTokenValid(token, "user@example.com"))
-                .isInstanceOf(ExpiredJwtException.class);
+        ReflectionTestUtils.setField(
+                jwtService,
+                "accessTokenExpiration",
+                -1_000L
+        );
+
+        LocalDateTime sessionExpiresAt = LocalDateTime.now().plusDays(7);
+
+        assertThatThrownBy(() -> jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                sessionExpiresAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Session has already expired");
     }
 
     @Test
     void tamperedToken_shouldBeRejected() {
         UUID sessionId = UUID.randomUUID();
-        String token = jwtService.generateAccessToken("user@example.com", sessionId);
+        String token = jwtService.generateAccessToken(
+                "user@example.com",
+                sessionId,
+                LocalDateTime.now().plusDays(7)
+        );
 
         assertThatThrownBy(() -> jwtService.extractEmail(token + "tampered"))
                 .isInstanceOf(JwtException.class);

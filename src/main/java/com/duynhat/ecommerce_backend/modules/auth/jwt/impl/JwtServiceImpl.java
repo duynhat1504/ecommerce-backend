@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
@@ -21,15 +24,38 @@ public class JwtServiceImpl implements JwtService {
     private long accessTokenExpiration;
 
     @Override
-    public String generateAccessToken(String email, UUID sessionId) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
+    public String generateAccessToken(
+            String email,
+            UUID sessionId,
+            LocalDateTime sessionExpiresAt
+    ) {
+
+        Instant now = Instant.now();
+
+        Instant normalAccessExpiry = now.plusMillis(accessTokenExpiration);
+
+        Instant sessionExpiry = sessionExpiresAt
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
+
+        Instant effectiveExpiry = normalAccessExpiry
+                .isBefore(sessionExpiry)
+                ? normalAccessExpiry
+                : sessionExpiry;
+
+        if (!effectiveExpiry.isAfter(now)) {
+            throw new IllegalStateException("Session has already expired");
+        }
+
+        Date issuedAt = Date.from(now);
+
+        Date expiryDate = Date.from(effectiveExpiry);
 
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
                 .claim("sid", sessionId.toString())
-                .issuedAt(now)
+                .issuedAt(issuedAt)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();

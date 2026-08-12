@@ -7,6 +7,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Component
 public class RefreshTokenCookieFactory {
@@ -45,6 +46,23 @@ public class RefreshTokenCookieFactory {
                 .sameSite(cookieProperties.sameSite())
                 .path(COOKIE_PATH)
                 .maxAge(Duration.ZERO)
+                .build();
+    }
+
+    public ResponseCookie create(String refreshToken, LocalDateTime expiresAt) {
+        Duration remaining = Duration.between(LocalDateTime.now(), expiresAt);
+
+        if (remaining.isNegative() || remaining.isZero()) {
+            remaining = Duration.ZERO;
+        }
+
+        return ResponseCookie
+                .from(COOKIE_NAME, refreshToken)
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .path(COOKIE_PATH)
+                .maxAge(remaining)
                 .build();
     }
 }

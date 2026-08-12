@@ -14,5 +14,4 @@ public interface RefreshTokenService {
     RefreshTokenRotationResult rotateRefreshToken(String rawToken);
     long deleteExpiredRefreshTokens();
     Set<UUID> revokeAllRefreshTokens(UUID userId);
-    void revokeSession(UUID sessionId);
 }

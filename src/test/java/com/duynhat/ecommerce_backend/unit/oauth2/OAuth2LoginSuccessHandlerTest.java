@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +76,7 @@ class OAuth2LoginSuccessHandlerTest {
         when(oAuth2User.getAttribute("email")).thenReturn("google@example.com");
         when(oAuth2User.getAttribute("name")).thenReturn("Google User");
         when(oAuth2User.getAttribute("email_verified")).thenReturn(true);
-        
+
         when(userService.findOrCreateGoogleUser(
                 "google-123",
                 "google@example.com",
@@ -84,7 +85,8 @@ class OAuth2LoginSuccessHandlerTest {
 
         RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult(
                 "refresh-token",
-                UUID.randomUUID()
+                UUID.randomUUID(),
+                LocalDateTime.now().plusDays(7)
         );
 
         when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);

@@ -9,6 +9,7 @@ import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
 import com.duynhat.ecommerce_backend.modules.auth.entity.RefreshToken;
+import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,11 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.sql.Ref;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -42,32 +41,38 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Autowired
     private AccessTokenBlacklistService accessTokenBlacklistService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
     @Override
     public RefreshTokenCreationResult createRefreshToken(User user) {
-        if (user == null) {
+        if (user == null || user.getId() == null) {
             throw new IllegalStateException("User must not be null");
         }
+
+        User lockedUser = lockUser(user.getId());
 
         String rawToken = generateRawToken();
         String tokenHash = hashToken(rawToken);
 
         UUID sessionId = UUID.randomUUID();
 
+        LocalDateTime expiresAt = LocalDateTime.now()
+                .plus(Duration.ofMillis(refreshTokenExpiration));
+
         RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
+                .user(lockedUser)
                 .sessionId(sessionId)
                 .tokenHash(tokenHash)
-                .expiresAt(
-                        LocalDateTime.now()
-                                .plus(Duration.ofMillis(refreshTokenExpiration))
-                )
+                .expiresAt(expiresAt)
                 .build();
 
         refreshTokenRepository.save(refreshToken);
-        return new RefreshTokenCreationResult(rawToken, sessionId);
+
+        return new RefreshTokenCreationResult(rawToken, sessionId, expiresAt);
     }
 
     @Override
@@ -78,14 +83,19 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         String tokenHash = hashToken(rawToken);
 
-        RefreshToken refreshToken = refreshTokenRepository
+        RefreshToken tokenSnapshot = refreshTokenRepository
                 .findByTokenHash(tokenHash)
-                .orElseThrow(() ->
-                        new InvalidTokenException("Invalid refresh token")
-                );
+                .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
+
+        lockUser(tokenSnapshot.getUser().getId());
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByTokenHashForUpdate(tokenHash)
+                .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
         if (!refreshToken.isRevoked()) {
             refreshToken.revoke();
+
             refreshTokenRepository.save(refreshToken);
         }
 
@@ -98,18 +108,29 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         String currentTokenHash = hashToken(rawToken);
 
+        RefreshToken tokenSnapshot = refreshTokenRepository
+                .findByTokenHash(currentTokenHash)
+                .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
+
+        lockUser(tokenSnapshot.getUser().getId());
+
         RefreshToken currentToken = refreshTokenRepository
                 .findByTokenHashForUpdate(currentTokenHash)
                 .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
         if (currentToken.isRevoked()) {
-            boolean isRotatedTokenReuse = currentToken.getReplacedByTokenHash() != null;
-
             refreshTokenCompromiseService.compromiseSession(currentToken.getSessionId());
 
             accessTokenBlacklistService.blacklistSession(currentToken.getSessionId());
 
             throw new InvalidTokenException("Invalid refresh token");
+        }
+
+        if (accessTokenBlacklistService
+                .isSessionBlacklisted(currentToken.getSessionId())) {
+            throw new InvalidTokenException(
+                    "Invalid refresh token"
+            );
         }
 
         if (currentToken.isExpired()) {
@@ -129,13 +150,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .user(user)
                 .sessionId(currentToken.getSessionId())
                 .tokenHash(newTokenHash)
-                .expiresAt(
-                        LocalDateTime.now().plus(
-                                Duration.ofMillis(
-                                        refreshTokenExpiration
-                                )
-                        )
-                )
+                .expiresAt(currentToken.getExpiresAt())
                 .build();
 
         refreshTokenRepository.save(replacementToken);
@@ -143,7 +158,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         currentToken.revoke(newTokenHash);
         refreshTokenRepository.save(currentToken);
 
-        return new RefreshTokenRotationResult(user, newRawToken, currentToken.getSessionId());
+        return new RefreshTokenRotationResult(
+                user,
+                newRawToken,
+                currentToken.getSessionId(),
+                replacementToken.getExpiresAt()
+        );
     }
 
     @Override
@@ -153,26 +173,21 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     public Set<UUID> revokeAllRefreshTokens(UUID userId) {
-        List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(userId);
+        lockUser(userId);
 
-        Set<UUID> sessionIds = activeTokens.stream()
-                .map(RefreshToken::getSessionId)
-                .collect(Collectors.toSet());
+        LocalDateTime now = LocalDateTime.now();
+
+        Set<UUID> sessionIds = refreshTokenRepository
+                .findDistinctUnexpiredSessionIdsByUserId(userId, now);
+
+        List<RefreshToken> activeTokens = refreshTokenRepository
+                .findAllByUser_IdAndRevokedAtIsNull(userId);
 
         activeTokens.forEach(RefreshToken::revoke);
+
         refreshTokenRepository.saveAll(activeTokens);
 
         return sessionIds;
-    }
-
-    @Override
-    public void revokeSession(UUID sessionId) {
-        List<RefreshToken> activeTokens = refreshTokenRepository
-                .findAllBySessionIdAndRevokedAtIsNull(sessionId);
-
-        activeTokens.forEach(RefreshToken::revoke);
-
-        refreshTokenRepository.saveAll(activeTokens);
     }
 
     private String generateRawToken() {
@@ -205,5 +220,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                     "Refresh token is required"
             );
         }
+    }
+
+    private User lockUser(UUID userId) {
+        return userRepository
+                .findByIdForUpdate(userId)
+                .orElseThrow(() -> new IllegalStateException("User does not exist"));
     }
 }
