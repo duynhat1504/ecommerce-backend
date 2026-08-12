@@ -37,13 +37,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElse(null);
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        return userRepository.findByEmail(normalizedEmail).orElse(null);
     }
 
     @Override
     public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        return userRepository.existsByEmail(normalizedEmail);
     }
 
     @Override
