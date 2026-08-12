@@ -439,23 +439,29 @@ public class OrderServiceImpl implements OrderService {
                 .collect(
                         Collectors.groupingBy(
                                 item -> item.getProduct().getId(),
-                                Collectors.summingInt(
-                                        OrderItem::getQuantity
-                                )
+                                Collectors.summingInt(OrderItem::getQuantity)
                         )
                 );
 
-        if (quantityByProductId.isEmpty()) return;
+        if (quantityByProductId.isEmpty()) {
+            return;
+        }
 
-        List<UUID> productIds = quantityByProductId
-                .keySet()
-                .stream()
-                .sorted()
-                .toList();
+        List<UUID> productIds =
+                quantityByProductId
+                        .keySet()
+                        .stream()
+                        .sorted()
+                        .toList();
 
         List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
 
-        Map<UUID, Product> productMap = lockedProducts.stream()
+        if (lockedProducts.size() != productIds.size()) {
+            throw new ResourceNotFoundException("One or more products no longer exist");
+        }
+
+        Map<UUID, Product> productMap = lockedProducts
+                .stream()
                 .collect(
                         Collectors.toMap(
                                 Product::getId,
@@ -465,18 +471,24 @@ public class OrderServiceImpl implements OrderService {
 
         List<InventoryTransaction> inventoryTransactions = new ArrayList<>();
 
-        for (Map.Entry<UUID, Integer> entry : quantityByProductId.entrySet()) {
-            Product product = productMap.get(entry.getKey());
+        for (UUID productId : productIds) {
+            Product product = productMap.get(productId);
 
             if (product == null) {
-                continue;
+                throw new ResourceNotFoundException("Product not found: " + productId);
             }
 
-            int quantity = entry.getValue();
+            int quantity = quantityByProductId.get(productId);
 
             int stockBefore = product.getStock();
 
-            int stockAfter = stockBefore + quantity;
+            long stockAfterValue = (long) stockBefore + quantity;
+
+            if (stockAfterValue > Integer.MAX_VALUE) {
+                throw new BadRequestException("Stock exceeds supported limit");
+            }
+
+            int stockAfter = (int) stockAfterValue;
 
             product.setStock(stockAfter);
 
@@ -493,6 +505,9 @@ public class OrderServiceImpl implements OrderService {
             inventoryTransactions.add(transaction);
         }
 
-        inventoryTransactionRepository.saveAll(inventoryTransactions);
+        inventoryTransactionRepository
+                .saveAll(
+                        inventoryTransactions
+                );
     }
 }
