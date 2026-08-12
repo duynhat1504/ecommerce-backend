@@ -183,6 +183,10 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Product is not available");
         }
 
+        if (!Boolean.TRUE.equals(product.getCategory().getActive())) {
+            throw new BadRequestException("Product category is not available");
+        }
+
         if (product.getStock() == null || product.getStock() <= 0) {
             throw new BadRequestException("Product is out of stock");
         }
@@ -239,6 +243,16 @@ public class CartServiceImpl implements CartService {
         BigDecimal subtotal = product.getPrice()
                 .multiply(BigDecimal.valueOf(item.getQuantity()));
 
+        boolean available = isProductAvailable(
+                product,
+                item.getQuantity()
+        );
+
+        String unavailableReason = getUnavailableReason(
+                product,
+                item.getQuantity()
+        );
+
         return CartItemResponse.builder()
                 .productId(product.getId())
                 .productName(product.getName())
@@ -247,6 +261,43 @@ public class CartServiceImpl implements CartService {
                 .quantity(item.getQuantity())
                 .subtotal(subtotal)
                 .availableStock(product.getStock())
+                .available(available)
+                .unavailableReason(unavailableReason)
                 .build();
+    }
+
+    private boolean isProductAvailable(Product product, int quantity) {
+        return Boolean.TRUE.equals(product.getActive())
+                && Boolean.TRUE.equals(
+                product
+                        .getCategory()
+                        .getActive()
+        )
+                && product.getStock() != null
+                && product.getStock() >= quantity;
+    }
+
+    private String getUnavailableReason(Product product, int quantity) {
+        if (!Boolean.TRUE.equals(product.getActive())) {
+            return "Product is inactive";
+        }
+
+        if (!Boolean.TRUE.equals(
+                product
+                        .getCategory()
+                        .getActive()
+        )) {
+            return "Product category is inactive";
+        }
+
+        if (product.getStock() == null || product.getStock() <= 0) {
+            return "Product is out of stock";
+        }
+
+        if (product.getStock() < quantity) {
+            return "Insufficient stock";
+        }
+
+        return null;
     }
 }

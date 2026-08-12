@@ -56,23 +56,25 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse create(CreateProductRequest req) {
         Category category = getActiveCategory(req.getCategoryName());
 
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(req.getDescription());
+
+        String normalizedImageUrl = normalizeNullableText(req.getImageUrl());
+
         Product product = Product.builder()
-                .name(req.getName())
-                .description(req.getDescription())
+                .name(normalizedName)
+                .description(normalizedDescription)
                 .price(req.getPrice())
                 .stock(req.getStock())
-                .imageUrl(req.getImageUrl())
+                .imageUrl(normalizedImageUrl)
                 .category(category)
                 .active(true)
                 .build();
 
-        try {
-            Product saved = productRepository.save(product);
+        Product saved = productRepository.save(product);
 
-            return toResponse(saved);
-        } catch (DataIntegrityViolationException e) {
-            throw e;
-        }
+        return toResponse(saved);
     }
 
     @Override
@@ -88,11 +90,29 @@ public class ProductServiceImpl implements ProductService {
         if (keyword != null) {
             Pageable pageable = PageRequest.of(page, size);
 
-            return productRepository.searchFullTextWithFilters(
+            if (req.getSort() == null || req.getSort().isBlank()) {
+                return productRepository
+                        .searchFullTextWithFilters(
+                                keyword,
+                                req.getCategoryId(),
+                                req.getMinPrice(),
+                                req.getMaxPrice(),
+                                pageable
+                        )
+                        .map(this::toResponse);
+            }
+
+            Sort sort = buildSort(req.getSort());
+
+            Sort.Order order = sort.iterator().next();
+
+            return productRepository.searchFullTextWithFiltersAndSort(
                     keyword,
                     req.getCategoryId(),
                     req.getMinPrice(),
                     req.getMaxPrice(),
+                    order.getProperty(),
+                    order.getDirection().name().toLowerCase(),
                     pageable
             ).map(this::toResponse);
         }
@@ -129,10 +149,10 @@ public class ProductServiceImpl implements ProductService {
 
         Category category = getActiveCategory(req.getCategoryName());
 
-        product.setName(req.getName());
-        product.setDescription(req.getDescription());
+        product.setName(req.getName().trim());
+        product.setDescription(normalizeNullableText(req.getDescription()));
         product.setPrice(req.getPrice());
-        product.setImageUrl(req.getImageUrl());
+        product.setImageUrl(normalizeNullableText(req.getImageUrl()));
         product.setCategory(category);
 
         if (req.getActive() != null) {
@@ -157,11 +177,17 @@ public class ProductServiceImpl implements ProductService {
 
         int stockBefore = product.getStock();
 
-        int stockAfter = stockBefore + req.getQuantity();
+        long stockAfterValue = (long) stockBefore + req.getQuantity();
 
-        if (stockAfter < 0) {
+        if (stockAfterValue < 0) {
             throw new BadRequestException("Stock cannot be negative");
         }
+
+        if (stockAfterValue > Integer.MAX_VALUE) {
+            throw new BadRequestException("Stock exceeds supported limit");
+        }
+
+        int stockAfter = (int) stockAfterValue;
 
         product.setStock(stockAfter);
 
@@ -330,5 +356,15 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return category;
+    }
+
+    private String normalizeNullableText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+
+        return normalized.isEmpty() ? null : normalized;
     }
 }
