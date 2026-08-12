@@ -59,7 +59,6 @@ class ProductRepositoryIntegrationTest extends AbstractIntegrationTest {
                         category.getId(),
                         null,
                         null,
-                        true,
                         PageRequest.of(0, 10)
                 );
 
@@ -77,7 +76,6 @@ class ProductRepositoryIntegrationTest extends AbstractIntegrationTest {
                         null,
                         null,
                         null,
-                        true,
                         PageRequest.of(0, 10)
                 );
 
