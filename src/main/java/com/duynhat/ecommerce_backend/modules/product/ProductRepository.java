@@ -114,4 +114,5 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     );
 
     Optional<Product> findByIdAndActiveTrueAndCategory_ActiveTrue(UUID id);
+    Page<Product> findByActive (Boolean active, Pageable pageable);
 }

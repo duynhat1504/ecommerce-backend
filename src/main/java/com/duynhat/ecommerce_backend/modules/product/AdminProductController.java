@@ -2,16 +2,16 @@ package com.duynhat.ecommerce_backend.modules.product;
 
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
+import com.duynhat.ecommerce_backend.common.core.dto.PageResponse;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.AdminProductQueryRequest;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -39,6 +39,26 @@ public class AdminProductController {
                 ApiResponse.success(
                         "Get product successfully",
                         product
+                )
+        );
+    }
+
+    @GetMapping
+    @Operation(
+            summary = "Get products for admin",
+            description =
+                    "Get all products including inactive products. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> findProducts(
+            @ModelAttribute AdminProductQueryRequest req
+    ) {
+        Page<ProductResponse> products =
+                productService.findProductsForAdmin(req);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Get products successfully",
+                        PageResponse.from(products)
                 )
         );
     }
