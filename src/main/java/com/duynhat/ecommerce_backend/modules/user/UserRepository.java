@@ -22,7 +22,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         FROM User u
         WHERE u.id = :userId
         """)
-    Optional<User> findByIdForUpdate(
-            @Param("userId") UUID userId
-    );
+    Optional<User> findByIdForUpdate(@Param("userId") UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE LOWER(u.email) = LOWER(:email)
+        """)
+    Optional<User> findByEmailIgnoreCaseForUpdate(@Param("email") String email);
 }

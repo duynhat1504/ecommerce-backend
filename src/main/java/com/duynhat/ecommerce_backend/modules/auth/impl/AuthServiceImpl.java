@@ -25,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,37 +52,38 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public RegisterResponse register(RegisterRequest req) {
-        String normalizedEmail = req.getEmail().trim().toLowerCase();
+        String normalizedEmail = req.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        String normalizedFullName = req.getFullName().trim();
+
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new DataIntegrityViolationException("Email already exists");
         }
 
         String passwordHash = passwordEncoder.encode(req.getPassword());
         User user = User.builder()
-                .fullName(req.getFullName())
+                .fullName(normalizedFullName)
                 .email(normalizedEmail)
                 .password(passwordHash)
                 .role(Role.USER)
                 .active(true)
                 .build();
 
-        try {
-            User saved = userRepository.save(user);
-            return RegisterResponse.builder()
-                    .id(saved.getId())
-                    .email(saved.getEmail())
-                    .fullName(saved.getFullName())
-                    .role(saved.getRole())
-                    .build();
-        } catch (DataIntegrityViolationException e) {
-            throw e;
-        }
+        User saved = userRepository.save(user);
+
+        return RegisterResponse.builder()
+                .id(saved.getId())
+                .email(saved.getEmail())
+                .fullName(saved.getFullName())
+                .role(saved.getRole())
+                .build();
     }
 
     @Override
     @Transactional
     public LoginResult login(LoginRequest req) {
         String normalizedEmail = req.getEmail().trim().toLowerCase();
+
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
