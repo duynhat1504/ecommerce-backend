@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.security.oauth2;
 
+import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
 import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
@@ -60,25 +61,44 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = oAuth2User.getAttribute("email");
         String fullName = oAuth2User.getAttribute("name");
 
+        Object emailVerifiedAttribute = oAuth2User.getAttribute("email_verified");
+
+        boolean emailVerified = Boolean.TRUE.equals(emailVerifiedAttribute)
+                || "true".equalsIgnoreCase(String.valueOf(emailVerifiedAttribute));
+
         if (email == null
                 || email.isBlank()
                 || googleId == null
                 || googleId.isBlank()
+                || !emailVerified
         ) {
-            response.sendRedirect(
-                    buildFrontendRedirect(
-                            "/login",
-                            "error",
-                            "google_login_failed"
-                    )
+            response.sendRedirect(buildFrontendRedirect(
+                    "/login",
+                    "error",
+                    "google_login_failed")
             );
 
             return;
         }
 
-        User savedUser = userService.findOrCreateGoogleUser(googleId, email, fullName);
+        User savedUser;
+        try {
+            savedUser = userService.findOrCreateGoogleUser(
+                    googleId,
+                    email,
+                    fullName);
+        } catch (BadRequestException ex) {
+            response.sendRedirect(buildFrontendRedirect(
+                    "/login",
+                    "error",
+                    "google_login_failed")
+            );
+
+            return;
+        }
 
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(savedUser);
+
         String refreshToken = refreshTokenResult.refreshToken();
 
         ResponseCookie refreshTokenCookie = refreshTokenCookieFactory.create(refreshToken);

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -74,26 +75,50 @@ public class UserServiceImpl implements UserService {
 
         String normalizedFullName = normalizeGoogleFullName(fullName, normalizedEmail);
 
-        User user = userRepository
-                .findByGoogleId(normalizedGoogleId)
-                .or(() -> userRepository.findByEmail(normalizedEmail))
-                .map(existingUser -> {
-                    existingUser.setGoogleId(normalizedGoogleId);
-                    if (existingUser.getFullName() == null || existingUser.getFullName().isBlank()) {
-                        existingUser.setFullName(normalizedFullName);
-                    }
-                    return existingUser;
-                })
-                .orElseGet(() -> User.builder()
-                        .email(normalizedEmail)
-                        .fullName(normalizedFullName)
-                        .googleId(normalizedGoogleId)
-                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                        .role(Role.USER)
-                        .active(true)
-                        .build());
+        Optional<User> googleUser = userRepository.findByGoogleId(normalizedGoogleId);
 
-        return userRepository.save(user);
+        if (googleUser.isPresent()) {
+            User existingUser = googleUser.get();
+
+            if (existingUser.getFullName() == null
+                    || existingUser.getFullName().isBlank()) {
+
+                existingUser.setFullName(normalizedFullName);
+            }
+
+            return userRepository.save(existingUser);
+        }
+
+        Optional<User> emailUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
+
+        if (emailUser.isPresent()) {
+            User existingUser = emailUser.get();
+
+            if (existingUser.getGoogleId() != null
+                    && !existingUser.getGoogleId().equals(normalizedGoogleId)) {
+                throw new BadRequestException("Account is already linked to another Google account");
+            }
+
+            existingUser.setGoogleId(normalizedGoogleId);
+
+            if (existingUser.getFullName() == null
+                    || existingUser.getFullName().isBlank()) {
+                existingUser.setFullName(normalizedFullName);
+            }
+
+            return userRepository.save(existingUser);
+        }
+
+        User newUser = User.builder()
+                .email(normalizedEmail)
+                .fullName(normalizedFullName)
+                .googleId(normalizedGoogleId)
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(Role.USER)
+                .active(true)
+                .build();
+
+        return userRepository.save(newUser);
     }
 
     private UserResponse toResponse(User user) {
