@@ -9,10 +9,7 @@ import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransacti
 import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.AdjustProductStockRequest;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.CreateProductRequest;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.ProductQueryRequest;
-import com.duynhat.ecommerce_backend.modules.product.dto.request.UpdateProductRequest;
+import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -183,6 +180,48 @@ public class ProductServiceImpl implements ProductService {
         inventoryTransactionRepository.save(transaction);
 
         return toResponse(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getByIdForAdmin(UUID id) {
+        Product product = productRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        return toResponse(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findProductsForAdmin(AdminProductQueryRequest req) {
+        int page = req.getPage() == null ? 0 : req.getPage();
+
+        int size = req.getSize() == null ? 10 : req.getSize();
+
+        validatePagination(page, size);
+
+        Sort sort = buildSort(req.getSort());
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        sort
+                );
+
+        Page<Product> products;
+
+        if (req.getActive() == null) {
+            products = productRepository.findAll(pageable);
+        } else {
+            products = productRepository.findByActive(
+                            req.getActive(),
+                            pageable
+                    );
+        }
+
+        return products.map(this::toResponse);
     }
 
     private Sort buildSort(String sortPram) {
