@@ -1,7 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.auth;
 
 import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
-import com.duynhat.ecommerce_backend.config.RefreshTokenCookieProperties;
 import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
@@ -15,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -23,7 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,9 +30,6 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
-    @Autowired
-    private RefreshTokenCookieProperties cookieProperties;
 
     @Autowired
     private RefreshTokenCookieFactory refreshTokenCookieFactory;
@@ -100,7 +95,8 @@ public class AuthController {
     ) {
         RefreshResult refreshResult = authService.refresh(rawRefreshToken);
 
-        ResponseCookie refreshTokenCookie = refreshTokenCookieFactory.create(refreshResult.refreshToken());
+        ResponseCookie refreshTokenCookie = refreshTokenCookieFactory
+                .create(refreshResult.refreshToken(), refreshResult.refreshTokenExpiresAt());
 
         servletResponse.addHeader(
                 HttpHeaders.SET_COOKIE,

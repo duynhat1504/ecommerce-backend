@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -29,4 +30,14 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
             """)
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
     List<RefreshToken> findAllBySessionIdAndRevokedAtIsNull(UUID sessionId);
+    @Query("""
+        SELECT DISTINCT rt.sessionId
+        FROM RefreshToken rt
+        WHERE rt.user.id = :userId
+          AND rt.expiresAt > :now
+        """)
+    Set<UUID> findDistinctUnexpiredSessionIdsByUserId(
+            @Param("userId") UUID userId,
+            @Param("now") LocalDateTime now
+    );
 }

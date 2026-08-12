@@ -27,6 +27,9 @@ public class AccessTokenBlacklistServiceImpl implements AccessTokenBlacklistServ
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
 
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
     public AccessTokenBlacklistServiceImpl(StringRedisTemplate redisTemplate, JwtService jwtService) {
         this.redisTemplate = redisTemplate;
         this.jwtService = jwtService;
@@ -66,7 +69,11 @@ public class AccessTokenBlacklistServiceImpl implements AccessTokenBlacklistServ
             throw new IllegalArgumentException("Session ID must not be null");
         }
 
-        Duration ttl =Duration.ofMillis(accessTokenExpiration);
+        Duration ttl = Duration.ofMillis(
+                Math.max(accessTokenExpiration,
+                        refreshTokenExpiration
+                )
+        );
 
         redisTemplate.opsForValue().set(
                 SESSION_BLACKLIST_PREFIX + sessionId,
