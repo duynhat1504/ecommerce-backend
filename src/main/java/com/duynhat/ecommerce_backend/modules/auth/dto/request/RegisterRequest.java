@@ -14,14 +14,16 @@ import lombok.*;
 public class RegisterRequest {
 
     @NotBlank(message = "Full name is required")
+    @Size(max = 100, message = "Full name must not exceed 100 characters")
     private String fullName;
 
     @Email(message = "Email is invalid")
     @NotBlank(message = "Email is required")
+    @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
 
-    @Size(min = 6, message = "Password must be at least 6 characters")
     @NotBlank(message = "Password is required")
+    @Size(min = 6, max = 100, message = "Password must be at least 6 characters")
     private String password;
 
 }

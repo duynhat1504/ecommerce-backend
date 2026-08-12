@@ -60,8 +60,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = oAuth2User.getAttribute("email");
         String fullName = oAuth2User.getAttribute("name");
 
-        if (email == null || googleId == null) {
-            response.sendRedirect(buildFrontendRedirect("/login", "error", "google_login_failed"));
+        if (email == null
+                || email.isBlank()
+                || googleId == null
+                || googleId.isBlank()
+        ) {
+            response.sendRedirect(
+                    buildFrontendRedirect(
+                            "/login",
+                            "error",
+                            "google_login_failed"
+                    )
+            );
+
             return;
         }
 
