@@ -57,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse create(CreateProductRequest req) {
-        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
+        Category category = getActiveCategory(req.getCategoryName());
 
         Product product = Product.builder()
                 .name(req.getName())
@@ -130,7 +130,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        Category category = categoryService.findCategoryByNameIgnoreCase(req.getCategoryName().trim());
+        Category category = getActiveCategory(req.getCategoryName());
 
         product.setName(req.getName());
         product.setDescription(req.getDescription());
@@ -281,5 +281,15 @@ public class ProductServiceImpl implements ProductService {
         return userRepository
                 .findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private Category getActiveCategory(String categoryName) {
+        Category category = categoryService.findCategoryByNameIgnoreCase(categoryName.trim());
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+
+        return category;
     }
 }

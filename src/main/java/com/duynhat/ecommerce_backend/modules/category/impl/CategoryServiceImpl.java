@@ -43,7 +43,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryResponse> getAll() {
-        return categoryRepository.findAll()
+        return categoryRepository
+                .findAllByActiveTrue()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -51,7 +52,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getById(UUID id) {
-        Category category = findCategoryById(id);
+        Category category = categoryRepository
+                .findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
         return toResponse(category);
     }
 
@@ -84,7 +88,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category findCategoryByNameIgnoreCase(String name) {
-        return categoryRepository.findCategoryByNameIgnoreCase(name.trim())
+        return categoryRepository
+                .findCategoryByNameIgnoreCase(name.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
