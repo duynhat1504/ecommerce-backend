@@ -93,6 +93,31 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
+    @Override
+    public List<CategoryResponse> getAllForAdmin(Boolean active) {
+        List<Category> categories;
+
+        if (active == null) {
+            categories = categoryRepository.findAll();
+        } else {
+            categories = categoryRepository.findAllByActive(active);
+        }
+
+        return categories
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public CategoryResponse getByIdForAdmin(UUID id) {
+        Category category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        return toResponse(category);
+    }
+
     private CategoryResponse toResponse(Category category) {
         return CategoryResponse.builder()
                 .id(category.getId())
