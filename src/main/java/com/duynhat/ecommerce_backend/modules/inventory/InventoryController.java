@@ -10,9 +10,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -32,6 +34,13 @@ public class InventoryController {
     public ResponseEntity<ApiResponse<PageResponse<InventoryTransactionResponse>>> getProductTransactions(
             @PathVariable UUID productId,
             @RequestParam(required = false) InventoryTransactionType type,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
@@ -39,6 +48,8 @@ public class InventoryController {
                 inventoryService.getProductTransactions(
                         productId,
                         type,
+                        fromDate,
+                        toDate,
                         page,
                         size
                 );
