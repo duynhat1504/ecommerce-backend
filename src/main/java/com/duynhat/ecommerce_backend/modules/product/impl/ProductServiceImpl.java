@@ -157,11 +157,17 @@ public class ProductServiceImpl implements ProductService {
 
         int stockBefore = product.getStock();
 
-        int stockAfter = stockBefore + req.getQuantity();
+        long stockAfterValue = (long) stockBefore + req.getQuantity();
 
-        if (stockAfter < 0) {
+        if (stockAfterValue < 0) {
             throw new BadRequestException("Stock cannot be negative");
         }
+
+        if (stockAfterValue > Integer.MAX_VALUE) {
+            throw new BadRequestException("Stock exceeds supported limit");
+        }
+
+        int stockAfter = (int) stockAfterValue;
 
         product.setStock(stockAfter);
 
