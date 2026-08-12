@@ -52,7 +52,7 @@ class UserServiceImplTest {
 
         assertThat(result).isSameAs(existingUser);
         assertThat(result.getEmail()).isEqualTo("existing@example.com");
-        verify(userRepository, never()).findByEmailIgnoreCase(any());
+        verify(userRepository, never()).findByEmailIgnoreCaseForUpdate(any());
         verify(passwordEncoder, never()).encode(any());
     }
 
@@ -62,7 +62,7 @@ class UserServiceImplTest {
 
         when(userRepository.findByGoogleId("google-123"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmailIgnoreCase("local@example.com"))
+        when(userRepository.findByEmailIgnoreCaseForUpdate("local@example.com"))
                 .thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -82,7 +82,7 @@ class UserServiceImplTest {
     void findOrCreateGoogleUser_whenUserDoesNotExist_shouldCreateActiveUser() {
         when(userRepository.findByGoogleId("google-123"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmailIgnoreCase("new@example.com"))
+        when(userRepository.findByEmailIgnoreCaseForUpdate("new@example.com"))
                 .thenReturn(Optional.empty());
         when(passwordEncoder.encode(any())).thenReturn("encoded-random-password");
         when(userRepository.save(any(User.class)))

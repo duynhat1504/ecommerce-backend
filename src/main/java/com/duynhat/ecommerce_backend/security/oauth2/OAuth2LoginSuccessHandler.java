@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -87,7 +88,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     googleId,
                     email,
                     fullName);
-        } catch (BadRequestException ex) {
+        } catch (BadRequestException | DataIntegrityViolationException ex) {
             response.sendRedirect(buildFrontendRedirect(
                     "/login",
                     "error",

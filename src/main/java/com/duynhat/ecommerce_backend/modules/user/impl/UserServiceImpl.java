@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -58,6 +59,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User findOrCreateGoogleUser(
             String googleId,
             String email,
@@ -100,7 +102,8 @@ public class UserServiceImpl implements UserService {
             return userRepository.save(existingUser);
         }
 
-        Optional<User> emailUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
+        Optional<User> emailUser = userRepository
+                .findByEmailIgnoreCaseForUpdate(normalizedEmail);
 
         if (emailUser.isPresent()) {
             User existingUser = emailUser.get();
