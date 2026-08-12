@@ -22,6 +22,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -86,13 +87,22 @@ class AuthServiceImplTest {
     void login_withValidUser_shouldReturnToken() {
         LoginRequest request = loginRequest("secret123");
         User user = activeUser();
-
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(7);
         UUID sessionId = UUID.randomUUID();
-        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult("refresh-token", sessionId);
+
+        RefreshTokenCreationResult refreshTokenResult = new RefreshTokenCreationResult(
+                "refresh-token",
+                sessionId,
+                expiresAt
+        );
         when(userRepository.findByEmail("user@example.com"))
                 .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret123", "encoded-password")).thenReturn(true);
-        when(jwtService.generateAccessToken(user.getEmail(), sessionId)).thenReturn("jwt-token");
+        when(jwtService.generateAccessToken(
+                user.getEmail(),
+                sessionId,
+                expiresAt
+        )).thenReturn("jwt-token");
         when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshTokenResult);
 
         LoginResult result = authService.login(request);

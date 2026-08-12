@@ -101,7 +101,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(user);
-        String accessToken = jwtService.generateAccessToken(user.getEmail(), refreshTokenResult.sessionId());
+        String accessToken = jwtService.generateAccessToken(
+                user.getEmail(),
+                refreshTokenResult.sessionId(),
+                refreshTokenResult.expiresAt()
+        );
 
         AuthResponse authResponse =  AuthResponse.builder()
                 .accessToken(accessToken)
@@ -122,12 +126,17 @@ public class AuthServiceImpl implements AuthService {
 
         String newAccessToken = jwtService.generateAccessToken(
                 rotationResult.user().getEmail(),
-                rotationResult.sessionId()
+                rotationResult.sessionId(),
+                rotationResult.expiresAt()
         );
 
         RefreshResponse refreshResponse = new RefreshResponse(newAccessToken, "Bearer");
 
-        return new RefreshResult(refreshResponse, rotationResult.refreshToken());
+        return new RefreshResult(
+                refreshResponse,
+                rotationResult.refreshToken(),
+                rotationResult.expiresAt()
+        );
     }
 
     @Override

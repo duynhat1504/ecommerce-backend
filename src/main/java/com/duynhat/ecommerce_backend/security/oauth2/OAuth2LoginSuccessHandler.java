@@ -98,7 +98,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(savedUser);
+        RefreshTokenCreationResult refreshTokenResult = refreshTokenService
+                .createRefreshToken(savedUser);
 
         String refreshToken = refreshTokenResult.refreshToken();
 
