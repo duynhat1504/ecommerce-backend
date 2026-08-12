@@ -88,8 +88,6 @@ public class ProductServiceImpl implements ProductService {
 
         String keyword = normalizeKeyword(req.getKeyword());
 
-        Boolean active = req.getActive();
-
         if (keyword != null) {
             Pageable pageable = PageRequest.of(page, size);
 
@@ -98,7 +96,6 @@ public class ProductServiceImpl implements ProductService {
                     req.getCategoryId(),
                     req.getMinPrice(),
                     req.getMaxPrice(),
-                    active,
                     pageable
             ).map(this::toResponse);
         }
@@ -114,14 +111,14 @@ public class ProductServiceImpl implements ProductService {
                 req.getCategoryId(),
                 req.getMinPrice(),
                 req.getMaxPrice(),
-                active,
                 pageable
         ).map(this::toResponse);
     }
 
     @Override
     public ProductResponse getById(UUID id) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository
+                .findByIdAndActiveTrueAndCategory_ActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         return toResponse(product);
@@ -165,12 +162,8 @@ public class ProductServiceImpl implements ProductService {
 
         int stockAfter = stockBefore + req.getQuantity();
 
-        int newStock = product.getStock() + req.getQuantity();
-
-        if (newStock < 0) {
-            throw new BadRequestException(
-                    "Stock cannot be negative"
-            );
+        if (stockAfter < 0) {
+            throw new BadRequestException("Stock cannot be negative");
         }
 
         product.setStock(stockAfter);
