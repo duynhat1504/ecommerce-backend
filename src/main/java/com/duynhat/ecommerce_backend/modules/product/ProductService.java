@@ -17,4 +17,5 @@ public interface ProductService {
     ProductResponse getById(UUID id);
     ProductResponse update(UUID id, UpdateProductRequest request);
     ProductResponse adjustStock(UUID id, AdjustProductStockRequest request);
+    ProductResponse getByIdForAdmin(UUID id);
 }

@@ -185,6 +185,16 @@ public class ProductServiceImpl implements ProductService {
         return toResponse(product);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getByIdForAdmin(UUID id) {
+        Product product = productRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        return toResponse(product);
+    }
+
     private Sort buildSort(String sortPram) {
         if (sortPram == null || sortPram.isBlank()) {
             return Sort.by(Sort.Direction.DESC, "createdAt");
