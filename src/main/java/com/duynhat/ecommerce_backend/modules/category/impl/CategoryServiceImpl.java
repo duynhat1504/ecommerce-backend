@@ -22,23 +22,24 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse create(CreateCategoryRequest req) {
-        if (categoryRepository.existsCategoryByNameIgnoreCase(req.getName())) {
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(
+                req.getDescription());
+
+        if (categoryRepository.existsCategoryByNameIgnoreCase(normalizedName)) {
             throw new DataIntegrityViolationException("Category name already exists");
         }
 
         Category category = Category.builder()
-                .name(req.getName())
-                .description(req.getDescription())
+                .name(normalizedName)
+                .description(normalizedDescription)
                 .active(true)
                 .build();
 
-        try {
-            Category saved = categoryRepository.save(category);
+        Category saved = categoryRepository.save(category);
 
-            return toResponse(saved);
-        } catch (DataIntegrityViolationException e) {
-            throw e;
-        }
+        return toResponse(saved);
     }
 
     @Override
@@ -63,15 +64,21 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse update(UUID id, UpdateCategoryRequest req) {
         Category category = findCategoryById(id);
 
-        categoryRepository.findCategoryByNameIgnoreCase(req.getName().trim())
+        String normalizedName = req.getName().trim();
+
+        String normalizedDescription = normalizeNullableText(req.getDescription());
+
+        categoryRepository
+                .findCategoryByNameIgnoreCase(normalizedName)
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
                         throw new DataIntegrityViolationException("Category name already exists");
                     }
                 });
 
-        category.setName(req.getName());
-        category.setDescription(req.getDescription());
+        category.setName(normalizedName);
+
+        category.setDescription(normalizedDescription);
 
         if (req.getActive() != null) {
             category.setActive(req.getActive());
@@ -125,5 +132,15 @@ public class CategoryServiceImpl implements CategoryService {
                 .description(category.getDescription())
                 .active(category.getActive())
                 .build();
+    }
+
+    private String normalizeNullableText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+
+        return normalized.isEmpty() ? null : normalized;
     }
 }
