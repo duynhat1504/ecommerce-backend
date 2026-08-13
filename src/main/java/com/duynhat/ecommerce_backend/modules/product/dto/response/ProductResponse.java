@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -22,4 +23,5 @@ public class ProductResponse {
 
     private UUID categoryId;
     private String categoryName;
+    private LocalDateTime deletedAt;
 }

@@ -16,4 +16,5 @@ public interface ProductService {
     ProductResponse adjustStock(UUID id, AdjustProductStockRequest request);
     ProductResponse getByIdForAdmin(UUID id);
     Page<ProductResponse> findProductsForAdmin(AdminProductQueryRequest request);
+    void delete(UUID id);
 }

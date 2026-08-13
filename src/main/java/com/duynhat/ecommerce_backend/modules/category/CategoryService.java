@@ -14,7 +14,7 @@ public interface CategoryService {
     List<CategoryResponse> getAll();
     CategoryResponse getById(UUID id);
     CategoryResponse update(UUID id, UpdateCategoryRequest request);
-//    void delete(UUID id);
+    void delete(UUID id);
     Category findCategoryById(UUID id);
     Category findCategoryByNameIgnoreCase(String name);
     List<CategoryResponse> getAllForAdmin(Boolean active);

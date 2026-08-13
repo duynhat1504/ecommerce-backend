@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.modules.category.impl;
 
+import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
 import com.duynhat.ecommerce_backend.modules.category.CategoryService;
@@ -7,10 +8,13 @@ import com.duynhat.ecommerce_backend.modules.category.dto.request.CreateCategory
 import com.duynhat.ecommerce_backend.modules.category.dto.request.UpdateCategoryRequest;
 import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryResponse;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
+import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +23,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Override
     public CategoryResponse create(CreateCategoryRequest req) {
@@ -45,7 +52,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<CategoryResponse> getAll() {
         return categoryRepository
-                .findAllByActiveTrue()
+                .findAllByActiveTrueAndDeletedAtIsNull()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -54,7 +61,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse getById(UUID id) {
         Category category = categoryRepository
-                .findByIdAndActiveTrue(id)
+                .findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         return toResponse(category);
@@ -123,6 +130,24 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         return toResponse(category);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        Category category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        if (category.getDeletedAt() != null) {
+            throw new ResourceNotFoundException("Category not found");
+        }
+
+        if (productRepository.existsByCategory_IdAndDeletedAtIsNull(id)) {
+            throw new BadRequestException("Cannot delete category containing products");
+        }
+
+        category.setDeletedAt(LocalDateTime.now());
     }
 
     private CategoryResponse toResponse(Category category) {
