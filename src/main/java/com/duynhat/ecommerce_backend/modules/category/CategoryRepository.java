@@ -13,7 +13,8 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     boolean existsCategoryByNameIgnoreCase(String name);
     Optional<Category> findCategoryByNameIgnoreCase(String name);
-    List<Category> findAllByActiveTrue();
-    Optional<Category> findByIdAndActiveTrue(UUID id);
+    List<Category> findAllByActiveTrueAndDeletedAtIsNull();
+    Optional<Category> findByIdAndActiveTrueAndDeletedAtIsNull(UUID id);
     List<Category> findAllByActive(Boolean active);
+    Optional<Category> findCategoryByNameIgnoreCaseAndDeletedAtIsNull(String name);
 }

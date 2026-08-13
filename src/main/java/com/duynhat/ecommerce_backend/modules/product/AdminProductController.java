@@ -62,4 +62,20 @@ public class AdminProductController {
                 )
         );
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Delete product",
+            description = "Soft delete a product. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        productService.delete(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Delete product successfully",
+                        null
+                )
+        );
+    }
 }

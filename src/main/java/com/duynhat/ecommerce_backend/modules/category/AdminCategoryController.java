@@ -59,4 +59,16 @@ public class AdminCategoryController {
                 )
         );
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        categoryService.delete(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Delete category successfully",
+                        null
+                )
+        );
+    }
 }

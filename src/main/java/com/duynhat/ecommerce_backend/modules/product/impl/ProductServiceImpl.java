@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -135,7 +136,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse getById(UUID id) {
         Product product = productRepository
-                .findByIdAndActiveTrueAndCategory_ActiveTrue(id)
+                .findByIdAndActiveTrueAndDeletedAtIsNullAndCategory_ActiveTrueAndCategory_DeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         return toResponse(product);
@@ -250,6 +251,16 @@ public class ProductServiceImpl implements ProductService {
         return products.map(this::toResponse);
     }
 
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        product.setDeletedAt(LocalDateTime.now());
+    }
+
     private Sort buildSort(String sortPram) {
         if (sortPram == null || sortPram.isBlank()) {
             return Sort.by(Sort.Direction.DESC, "createdAt");
@@ -327,6 +338,7 @@ public class ProductServiceImpl implements ProductService {
                 .active(product.getActive())
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
+                .deletedAt(product.getDeletedAt())
                 .build();
     }
 
