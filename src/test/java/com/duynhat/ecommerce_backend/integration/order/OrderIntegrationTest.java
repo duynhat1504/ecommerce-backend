@@ -9,6 +9,8 @@ import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
+import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
+import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.order.OrderRepository;
 import com.duynhat.ecommerce_backend.modules.order.OrderService;
 import com.duynhat.ecommerce_backend.modules.order.dto.request.CreateOrderRequest;
@@ -34,6 +36,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -71,6 +75,9 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private InventoryTransactionRepository inventoryTransactionRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -259,6 +266,89 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(orderRepository.findById(createdOrder.getId()).orElseThrow().getStatus())
                 .isEqualTo(OrderStatus.PENDING);
+    }
+
+    @Test
+    void createOrder_whenCartContainsSoftDeletedProduct_shouldRejectAndKeepDataUnchanged() {
+        Product product = createProduct(
+                "Deleted Checkout Product",
+                "100.00",
+                10
+        );
+
+        addToCart(product, 2);
+
+        Cart cart = getUserCart();
+
+        product.setDeletedAt(LocalDateTime.now());
+        productRepository.saveAndFlush(product);
+
+        assertThatThrownBy(
+                () -> orderService.createOrder(
+                        createOrderRequest()
+                )
+        )
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(
+                        "One or more products no longer exist"
+                );
+
+        assertThat(orderRepository.count()).isZero();
+
+        assertThat(inventoryTransactionRepository.findAll()).isEmpty();
+
+        Product persistedProduct = productRepository
+                .findById(product.getId())
+                .orElseThrow();
+
+        assertThat(persistedProduct.getStock()).isEqualTo(10);
+
+        assertThat(persistedProduct.getDeletedAt()).isNotNull();
+
+        assertThat(countCartItems(cart.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void cancelPendingOrder_whenProductWasSoftDeleted_shouldRestoreStockAndKeepProductDeleted() {
+        Product product = createProduct(
+                "Deleted Cancellation Product",
+                "100.00",
+                10
+        );
+
+        addToCart(product, 3);
+
+        OrderResponse createdOrder = orderService
+                .createOrder(createOrderRequest());
+
+        Product productAfterOrder = productRepository
+                .findById(product.getId())
+                .orElseThrow();
+
+        assertThat(productAfterOrder.getStock())
+                .isEqualTo(7);
+
+        LocalDateTime deletedAt = LocalDateTime.now()
+                .truncatedTo(ChronoUnit.MICROS);
+
+        productAfterOrder.setDeletedAt(deletedAt);
+
+        productRepository.saveAndFlush(productAfterOrder);
+
+        OrderResponse cancelledOrder = orderService.cancelMyOrder(createdOrder.getId());
+
+        Product productAfterCancellation = productRepository
+                .findById(product.getId())
+                .orElseThrow();
+
+        assertThat(cancelledOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELLED);
+        
+        assertThat(productAfterCancellation.getStock())
+                .isEqualTo(10);
+
+        assertThat(productAfterCancellation.getDeletedAt())
+                .isEqualTo(deletedAt);
     }
 
     private Product createProduct(String name, String price, int stock) {

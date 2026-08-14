@@ -257,4 +257,5 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             Pageable pageable
     );
     boolean existsByCategory_IdAndDeletedAtIsNull(UUID categoryId);
+    Optional<Product> findByIdAndDeletedAtIsNull(UUID id);
 }

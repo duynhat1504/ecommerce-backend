@@ -16,8 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -172,6 +171,40 @@ class ProductApiIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.content[0].categoryId").value(laptops.getId().toString()))
                 .andExpect(jsonPath("$.data.content[0].price").value(1200.00))
                 .andExpect(jsonPath("$.data.content[0].active").value(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteProduct_shouldSoftDeleteHideFromPublicButRemainVisibleForAdmin() throws Exception {
+        Category category = createCategory("Soft Delete Category");
+
+        Product product = createProduct(
+                "Soft Delete Product",
+                "999.00",
+                true,
+                category
+        );
+
+        mockMvc.perform(delete("/api/admin/products/{id}", product.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("Delete product successfully"));
+
+        Product persistedProduct = productRepository
+                .findById(product.getId())
+                .orElseThrow();
+
+        assertThat(persistedProduct.getDeletedAt()).isNotNull();
+
+        mockMvc.perform(get("/api/products/{id}", product.getId()))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/admin/products/{id}", product.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id")
+                        .value(product.getId().toString()))
+                .andExpect(jsonPath("$.data.deletedAt").isNotEmpty());
     }
 
     private Category createCategory(String name) {
