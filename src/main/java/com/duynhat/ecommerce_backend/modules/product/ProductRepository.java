@@ -26,6 +26,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                     p.stock,
                     p.image_url,
                     p.active,
+                    p.deleted_at,
                     p.category_id,
                     p.created_at,
                     p.updated_at
@@ -36,7 +37,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                   AND (:minPrice IS NULL OR p.price >= :minPrice)
                   AND (:maxPrice IS NULL OR p.price <= :maxPrice)
                   AND p.active = true
+                  AND p.deleted_at IS NULL
                   AND c.active = true
+                  AND c.deleted_at IS NULL
                   AND p.search_vector @@ websearch_to_tsquery(
                         'simple',
                         :keyword
@@ -60,7 +63,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                   AND (:minPrice IS NULL OR p.price >= :minPrice)
                   AND (:maxPrice IS NULL OR p.price <= :maxPrice)
                   AND p.active = true
+                  AND p.deleted_at IS NULL
                   AND c.active = true
+                  AND c.deleted_at IS NULL
                   AND p.search_vector @@ websearch_to_tsquery(
                         'simple',
                         :keyword
@@ -83,7 +88,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
               AND (:minPrice IS NULL OR p.price >= :minPrice)
               AND (:maxPrice IS NULL OR p.price <= :maxPrice)
               AND p.active = true
+              AND p.deletedAt IS NULL
               AND p.category.active = true
+              AND p.category.deletedAt IS NULL
             """)
     Page<Product> filterProducts(
             @Param("categoryId") UUID categoryId,
@@ -105,15 +112,29 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
+            SELECT p
+            FROM Product p
+            WHERE p.id IN :productIds
+              AND p.deletedAt IS NULL
+              AND p.category.deletedAt IS NULL
+            ORDER BY p.id ASC
+        """)
+    List<Product> findOrderableByIdsForUpdate(
+            @Param("productIds") List<UUID> productIds
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
         SELECT p
         FROM Product p
         WHERE p.id = :productId
+        AND p.deletedAt IS NULL
         """)
     Optional<Product> findByIdForUpdate(
             @Param("productId") UUID productId
     );
 
-    Optional<Product> findByIdAndActiveTrueAndCategory_ActiveTrue(UUID id);
+    Optional<Product> findByIdAndActiveTrueAndDeletedAtIsNullAndCategory_ActiveTrueAndCategory_DeletedAtIsNull(UUID id);
     Page<Product> findByActive (Boolean active, Pageable pageable);
 
     @Query(
@@ -126,6 +147,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                     p.stock,
                     p.image_url,
                     p.active,
+                    p.deleted_at,
                     p.category_id,
                     p.created_at,
                     p.updated_at
@@ -136,7 +158,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                   AND (:minPrice IS NULL OR p.price >= :minPrice)
                   AND (:maxPrice IS NULL OR p.price <= :maxPrice)
                   AND p.active = true
+                  AND p.deleted_at IS NULL
                   AND c.active = true
+                  AND c.deleted_at IS NULL
                   AND p.search_vector @@ websearch_to_tsquery(
                         'simple',
                         :keyword
@@ -213,7 +237,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                   AND (:minPrice IS NULL OR p.price >= :minPrice)
                   AND (:maxPrice IS NULL OR p.price <= :maxPrice)
                   AND p.active = true
+                  AND p.deleted_at IS NULL
                   AND c.active = true
+                  AND c.deleted_at IS NULL
                   AND p.search_vector @@ websearch_to_tsquery(
                         'simple',
                         :keyword
@@ -230,4 +256,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             @Param("sortDirection") String sortDirection,
             Pageable pageable
     );
+    boolean existsByCategory_IdAndDeletedAtIsNull(UUID categoryId);
+    Optional<Product> findByIdAndDeletedAtIsNull(UUID id);
 }

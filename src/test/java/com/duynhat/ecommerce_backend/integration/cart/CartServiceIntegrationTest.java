@@ -1,5 +1,6 @@
 package com.duynhat.ecommerce_backend.integration.cart;
 
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.integration.AbstractIntegrationTest;
 import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
@@ -24,10 +25,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Transactional
 class CartServiceIntegrationTest extends AbstractIntegrationTest {
@@ -160,6 +163,26 @@ class CartServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(countCartItemsInDatabase(cart.getId())).isZero();
         assertThat(cartItemRepository.findAllByCartId(cart.getId())).isEmpty();
         assertThat(cartRepository.existsById(cart.getId())).isTrue();
+    }
+
+    @Test
+    void getCart_whenExistingProductWasSoftDeleted_shouldMarkItemUnavailable() {
+        cartService.addItem(
+                addItemRequest(product.getId(), 2)
+        );
+
+        product.setDeletedAt(LocalDateTime.now());
+        productRepository.saveAndFlush(product);
+
+        CartResponse response = cartService.getCart();
+
+        assertThat(response.getItems())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getProductId()).isEqualTo(product.getId());
+                    assertThat(item.getAvailable()).isFalse();
+                    assertThat(item.getUnavailableReason()).isEqualTo("Product is no longer available");
+                });
     }
 
     private Product createProduct(String name, String price, int stock) {

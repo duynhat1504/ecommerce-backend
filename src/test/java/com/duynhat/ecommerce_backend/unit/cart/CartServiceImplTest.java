@@ -104,7 +104,8 @@ class CartServiceImplTest {
         when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
-        when(productRepository.findById(product.getId()))
+        when(productRepository
+                .findByIdAndDeletedAtIsNull(product.getId()))
                 .thenReturn(Optional.of(product));
 
         when(cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId()))
@@ -131,7 +132,8 @@ class CartServiceImplTest {
         when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
-        when(productRepository.findById(product.getId()))
+        when(productRepository
+                .findByIdAndDeletedAtIsNull(product.getId()))
                 .thenReturn(Optional.of(product));
 
         assertThatThrownBy(() -> cartService.addItem(request))
@@ -155,16 +157,16 @@ class CartServiceImplTest {
         when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
-        when(productRepository.findById(product.getId()))
+        when(productRepository
+                .findByIdAndDeletedAtIsNull(product.getId()))
                 .thenReturn(Optional.of(product));
 
         when(cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId()))
                 .thenReturn(Optional.empty());
 
-        try {
-            cartService.addItem(request);
-        } catch (BadRequestException ignored) {
-        }
+        assertThatThrownBy(() -> cartService
+                .addItem(request))
+                .isInstanceOf(BadRequestException.class);
 
         assertThat(product.getStock()).isEqualTo(originalStock);
     }
@@ -181,7 +183,8 @@ class CartServiceImplTest {
         when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
-        when(productRepository.findById(product.getId()))
+        when(productRepository
+                .findByIdAndDeletedAtIsNull(product.getId()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cartService.addItem(request))
@@ -204,7 +207,8 @@ class CartServiceImplTest {
         when(cartRepository.findByUserIdForUpdate(user.getId()))
                 .thenReturn(Optional.of(cart));
 
-        when(productRepository.findById(product.getId()))
+        when(productRepository
+                .findByIdAndDeletedAtIsNull(product.getId()))
                 .thenReturn(Optional.of(product));
 
         assertThatThrownBy(() -> cartService.addItem(request))

@@ -28,6 +28,9 @@ public class Category {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
