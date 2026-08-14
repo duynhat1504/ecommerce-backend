@@ -63,7 +63,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
                   AND (:minPrice IS NULL OR p.price >= :minPrice)
                   AND (:maxPrice IS NULL OR p.price <= :maxPrice)
                   AND p.active = true
+                  AND p.deleted_at IS NULL
                   AND c.active = true
+                  AND c.deleted_at IS NULL
                   AND p.search_vector @@ websearch_to_tsquery(
                         'simple',
                         :keyword
