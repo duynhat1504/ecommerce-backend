@@ -71,7 +71,10 @@ class CategoryServiceImplTest {
         UpdateCategoryRequest request = new UpdateCategoryRequest();
         request.setName(" Gaming ");
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository
+                .findByIdAndDeletedAtIsNull(categoryId))
+                .thenReturn(Optional.of(category));;
+
         when(categoryRepository.findCategoryByNameIgnoreCase("Gaming")).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> categoryService.update(categoryId, request))
@@ -84,7 +87,10 @@ class CategoryServiceImplTest {
     @Test
     void findCategoryById_whenMissing_shouldThrowNotFound() {
         UUID categoryId = UUID.randomUUID();
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
+
+        when(categoryRepository
+                .findByIdAndDeletedAtIsNull(categoryId))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> categoryService.findCategoryById(categoryId))
                 .isInstanceOf(ResourceNotFoundException.class)

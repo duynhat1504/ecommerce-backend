@@ -62,7 +62,7 @@ public class CartServiceImpl implements CartService {
         Cart cart = getOrCreateCartForUpdate(user);
 
         Product product = productRepository
-                .findByIdAndActiveTrueAndDeletedAtIsNullAndCategory_ActiveTrueAndCategory_DeletedAtIsNull(req.getProductId())
+                .findByIdAndDeletedAtIsNull(req.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         validateProductAvailable(product);
