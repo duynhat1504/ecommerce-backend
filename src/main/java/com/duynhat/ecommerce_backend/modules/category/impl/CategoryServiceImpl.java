@@ -96,14 +96,15 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category findCategoryById(UUID id) {
-        return categoryRepository.findById(id)
+        return categoryRepository
+                .findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
     @Override
     public Category findCategoryByNameIgnoreCase(String name) {
         return categoryRepository
-                .findCategoryByNameIgnoreCase(name.trim())
+                .findCategoryByNameIgnoreCaseAndDeletedAtIsNull(name.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
@@ -156,6 +157,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .name(category.getName())
                 .description(category.getDescription())
                 .active(category.getActive())
+                .deletedAt(category.getDeletedAt())
                 .build();
     }
 

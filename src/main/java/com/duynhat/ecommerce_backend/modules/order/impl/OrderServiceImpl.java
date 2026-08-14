@@ -86,10 +86,10 @@ public class OrderServiceImpl implements OrderService {
                 .sorted()
                 .toList();
 
-        List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
+        List<Product> lockedProducts = productRepository.findOrderableByIdsForUpdate(productIds);
 
         if (lockedProducts.size() != productIds.size()) {
-            throw new ResourceNotFoundException("One or more products no longer exist");
+            throw new BadRequestException("One or more products no longer exist");
         }
 
         Map<UUID, Product> productMap = lockedProducts.stream()
@@ -309,15 +309,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void validateProduct(Product product, int quantity) {
+        if (product.getDeletedAt() != null) {
+            throw new BadRequestException("Product is no longer available" + product.getName());
+        }
+
         if (!Boolean.TRUE.equals(product.getActive())) {
             throw new BadRequestException("Product is not available: " + product.getName());
         }
 
-        if (!Boolean.TRUE.equals(
-                product
-                        .getCategory()
-                        .getActive()
-        )) {
+        if (product.getCategory().getDeletedAt() != null) {
+            throw new BadRequestException("Product category is not available" + product.getName());
+        }
+
+        if (!Boolean.TRUE.equals(product.getCategory().getActive())) {
             throw new BadRequestException("Product category is not available: " + product.getName());
         }
 
