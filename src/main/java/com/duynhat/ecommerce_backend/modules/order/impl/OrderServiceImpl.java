@@ -461,7 +461,7 @@ public class OrderServiceImpl implements OrderService {
         List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
 
         if (lockedProducts.size() != productIds.size()) {
-            throw new ResourceNotFoundException("One or more products no longer exist");
+            throw new ResourceNotFoundException("One or more products no longer available");
         }
 
         Map<UUID, Product> productMap = lockedProducts
