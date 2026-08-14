@@ -61,7 +61,8 @@ public class CartServiceImpl implements CartService {
         User user = getCurrentUser();
         Cart cart = getOrCreateCartForUpdate(user);
 
-        Product product = productRepository.findById(req.getProductId())
+        Product product = productRepository
+                .findByIdAndActiveTrueAndDeletedAtIsNullAndCategory_ActiveTrueAndCategory_DeletedAtIsNull(req.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         validateProductAvailable(product);
@@ -179,8 +180,16 @@ public class CartServiceImpl implements CartService {
     }
 
     private void validateProductAvailable(Product product) {
+        if (product.getDeletedAt() != null) {
+            throw new BadRequestException("Product is not available");
+        }
+
         if (!Boolean.TRUE.equals(product.getActive())) {
             throw new BadRequestException("Product is not available");
+        }
+
+        if (product.getCategory().getDeletedAt() != null) {
+            throw new BadRequestException("Product category is not available");
         }
 
         if (!Boolean.TRUE.equals(product.getCategory().getActive())) {
@@ -267,26 +276,28 @@ public class CartServiceImpl implements CartService {
     }
 
     private boolean isProductAvailable(Product product, int quantity) {
-        return Boolean.TRUE.equals(product.getActive())
-                && Boolean.TRUE.equals(
-                product
-                        .getCategory()
-                        .getActive()
-        )
+        return product.getDeletedAt() == null
+                && Boolean.TRUE.equals(product.getActive())
+                && product.getCategory().getDeletedAt() == null
+                && Boolean.TRUE.equals(product.getCategory().getActive())
                 && product.getStock() != null
                 && product.getStock() >= quantity;
     }
 
     private String getUnavailableReason(Product product, int quantity) {
+        if (product.getDeletedAt() != null) {
+            return "Product is no longer available";
+        }
+
         if (!Boolean.TRUE.equals(product.getActive())) {
             return "Product is inactive";
         }
 
-        if (!Boolean.TRUE.equals(
-                product
-                        .getCategory()
-                        .getActive()
-        )) {
+        if (product.getCategory().getDeletedAt() != null) {
+            return "Product category is no longer available";
+        }
+
+        if (!Boolean.TRUE.equals(product.getCategory().getActive())) {
             return "Product category is inactive";
         }
 

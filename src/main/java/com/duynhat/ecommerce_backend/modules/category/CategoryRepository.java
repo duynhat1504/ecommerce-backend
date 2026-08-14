@@ -17,4 +17,5 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     Optional<Category> findByIdAndActiveTrueAndDeletedAtIsNull(UUID id);
     List<Category> findAllByActive(Boolean active);
     Optional<Category> findCategoryByNameIgnoreCaseAndDeletedAtIsNull(String name);
+    Optional<Category> findByIdAndDeletedAtIsNull(UUID id);
 }
