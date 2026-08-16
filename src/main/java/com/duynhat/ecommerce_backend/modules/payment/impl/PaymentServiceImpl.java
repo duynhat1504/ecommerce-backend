@@ -54,17 +54,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         String normalizedKey = idempotencyKey.trim();
 
-        Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(normalizedKey);
-
-        if (existingPayment.isPresent()) {
-            return toResponse(existingPayment.get());
-        }
-
         User user = getCurrentUser();
 
         Order order = orderRepository
                 .findByIdAndUserIdForUpdate(req.getOrderId(), user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(normalizedKey);
+
+        if (existingPayment.isPresent()) {
+            return toResponse(existingPayment.get());
+        }
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new BadRequestException("Cancelled order cannot be paid");
