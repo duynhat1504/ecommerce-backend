@@ -54,24 +54,23 @@ public class PaymentServiceImpl implements PaymentService {
 
         String normalizedKey = idempotencyKey.trim();
 
-        Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(normalizedKey);
-
-        if (existingPayment.isPresent()) {
-            return toResponse(existingPayment.get());
-        }
-
         User user = getCurrentUser();
 
         Order order = orderRepository
                 .findByIdAndUserIdForUpdate(req.getOrderId(), user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new BadRequestException("Cancelled order cannot be paid");
-        }
+        Optional<Payment> existingPayment = paymentRepository
+                .findByIdempotencyKey(normalizedKey);
 
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new BadRequestException("Only pending orders can be paid");
+        if (existingPayment.isPresent()) {
+            Payment existing = existingPayment.get();
+
+            if (!existing.getOrder().getId().equals(order.getId())) {
+                throw new BadRequestException("Idempotency-Key has already been used for another order");
+            }
+
+            return toResponse(existing);
         }
 
         if (paymentRepository.existsByOrderIdAndStatus(
@@ -79,6 +78,14 @@ public class PaymentServiceImpl implements PaymentService {
                 PaymentStatus.SUCCESS
         )) {
             throw new BadRequestException("Order has already been paid");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BadRequestException("Cancelled order cannot be paid");
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Only pending orders can be paid");
         }
 
         Payment payment = new Payment();
