@@ -268,7 +268,11 @@ public class OrderServiceImpl implements OrderService {
         validateStatusTransition(currentStatus, newStatus);
 
         if (newStatus == OrderStatus.CANCELLED) {
-            restoreProductStock(order);
+            restoreProductStock(
+                    order,
+                    InventoryTransactionType.ORDER_CANCELLED,
+                    "Order cancelled: " + order.getOrderCode()
+            );
         }
 
         order.setStatus(newStatus);
@@ -292,7 +296,11 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Only pending orders can be cancelled");
         }
 
-        restoreProductStock(order);
+        restoreProductStock(
+                order,
+                InventoryTransactionType.ORDER_CANCELLED,
+                "Order cancelled: " + order.getOrderCode()
+        );
 
         order.setStatus(OrderStatus.CANCELLED);
 
@@ -306,6 +314,42 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         return toResponse(order);
+    }
+
+    @Override
+    @Transactional
+    public boolean expireOrderIfEligible(
+            UUID orderId,
+            LocalDateTime cutoff
+    ) {
+
+        Order order = orderRepository
+                .findByIdForUpdate(orderId)
+                .orElse(null);
+
+        if (order == null) {
+            return false;
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            return false;
+        }
+
+        if (order.getCreatedAt() == null
+                || !order.getCreatedAt().isBefore(cutoff)) {
+            return false;
+        }
+
+        restoreProductStock(
+                order,
+                InventoryTransactionType.ORDER_EXPIRED,
+                "Order expired: "
+                        + order.getOrderCode()
+        );
+
+        order.setStatus(OrderStatus.EXPIRED);
+
+        return true;
     }
 
     private void validateProduct(Product product, int quantity) {
@@ -378,11 +422,16 @@ public class OrderServiceImpl implements OrderService {
                 newStatus == OrderStatus.SHIPPING || newStatus == OrderStatus.CANCELLED;
             case SHIPPING ->
                 newStatus == OrderStatus.COMPLETED;
-            case COMPLETED, CANCELLED -> false;
+            case COMPLETED, CANCELLED, EXPIRED -> false;
         };
 
         if (!valid) {
-            throw new BadRequestException("Cannot change order status from " + currentStatus + " to " + newStatus);
+            throw new BadRequestException(
+                    "Cannot change order status from "
+                            + currentStatus
+                            + " to "
+                            + newStatus
+            );
         }
     }
 
@@ -436,7 +485,11 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    protected void restoreProductStock(Order order) {
+    protected void restoreProductStock(
+            Order order,
+            InventoryTransactionType transactionType,
+            String reason
+    ) {
         Map<UUID, Integer> quantityByProductId = order.getItems()
                 .stream()
                 .filter(item -> item.getProduct() != null)
@@ -451,12 +504,11 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
 
-        List<UUID> productIds =
-                quantityByProductId
-                        .keySet()
-                        .stream()
-                        .sorted()
-                        .toList();
+        List<UUID> productIds = quantityByProductId
+                .keySet()
+                .stream()
+                .sorted()
+                .toList();
 
         List<Product> lockedProducts = productRepository.findAllByIdForUpdate(productIds);
 
@@ -500,18 +552,15 @@ public class OrderServiceImpl implements OrderService {
 
             transaction.setProduct(product);
             transaction.setOrder(order);
-            transaction.setType(InventoryTransactionType.ORDER_CANCELLED);
+            transaction.setType(transactionType);
             transaction.setQuantityChange(quantity);
             transaction.setStockBefore(stockBefore);
             transaction.setStockAfter(stockAfter);
-            transaction.setReason("Order cancelled: " + order.getOrderCode());
+            transaction.setReason(reason);
 
             inventoryTransactions.add(transaction);
         }
 
-        inventoryTransactionRepository
-                .saveAll(
-                        inventoryTransactions
-                );
+        inventoryTransactionRepository.saveAll(inventoryTransactions);
     }
 }

@@ -7,6 +7,7 @@ import com.duynhat.ecommerce_backend.modules.order.dto.response.OrderSummaryResp
 import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface OrderService {
@@ -23,4 +24,5 @@ public interface OrderService {
     OrderResponse updateOrderStatus(UUID orderId, UpdateOrderStatusRequest request);
     OrderResponse cancelMyOrder(UUID orderId);
     OrderResponse getOrderById(UUID orderId);
+    boolean expireOrderIfEligible(UUID orderId, LocalDateTime cutoff);
 }

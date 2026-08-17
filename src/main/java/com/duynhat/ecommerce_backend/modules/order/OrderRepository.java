@@ -16,6 +16,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -67,5 +69,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByIdAndUserIdForUpdate(
             @Param("orderId") UUID orderId,
             @Param("userId") UUID userId
+    );
+
+    @Query("""
+        SELECT o.id
+        FROM Order o
+        WHERE o.status = :status
+          AND o.createdAt < :cutoff
+        ORDER BY o.createdAt ASC
+        """)
+    List<UUID> findExpiredOrderIds(
+            @Param("status") OrderStatus status,
+            @Param("cutoff") LocalDateTime cutoff,
+            Pageable pageable
     );
 }
