@@ -4,6 +4,12 @@ server:
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
 
+  order:
+    payment-timeout-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:15}
+    expiration-batch-size: ${ORDER_EXPIRATION_BATCH_SIZE:50}
+    expiration-scan-delay-ms: ${ORDER_EXPIRATION_SCAN_DELAY_MS:60000}
+    expiration-initial-delay-ms: ${ORDER_EXPIRATION_INITIAL_DELAY_MS:30000}
+
 auth:
   refresh-cookie:
     secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
