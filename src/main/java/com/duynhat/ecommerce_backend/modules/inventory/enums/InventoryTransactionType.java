@@ -4,5 +4,6 @@ public enum InventoryTransactionType {
 
     ADMIN_ADJUSTMENT,
     ORDER_CREATED,
-    ORDER_CANCELLED
+    ORDER_CANCELLED,
+    ORDER_EXPIRED
 }
