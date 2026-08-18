@@ -1,7 +1,10 @@
 package com.duynhat.ecommerce_backend.integration.order;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.integration.AbstractIntegrationTest;
+import com.duynhat.ecommerce_backend.modules.address.ShippingAddressRepository;
+import com.duynhat.ecommerce_backend.modules.address.entity.ShippingAddress;
 import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartService;
@@ -77,6 +80,9 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
     private ProductRepository productRepository;
 
     @Autowired
+    private ShippingAddressRepository shippingAddressRepository;
+
+    @Autowired
     private InventoryTransactionRepository inventoryTransactionRepository;
 
     @Autowired
@@ -87,6 +93,7 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
 
     private User user;
     private Category category;
+    private ShippingAddress shippingAddress;
 
     @BeforeEach
     void setUp() {
@@ -100,6 +107,16 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
                         .role(Role.USER)
                         .active(true)
                         .build()
+        );
+
+        shippingAddress = createShippingAddress(
+                user,
+                "Order Recipient",
+                "0901234567",
+                "Ha Noi",
+                "Cau Giay",
+                "Dich Vong",
+                "123 Test Street"
         );
 
         category = categoryRepository.saveAndFlush(
@@ -203,6 +220,168 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
                 .isEqualTo(5);
         assertThat(productRepository.findById(insufficientProduct.getId()).orElseThrow().getStock())
                 .isEqualTo(1);
+    }
+
+    @Test
+    void createOrder_withOwnedShippingAddress_shouldStoreAddressSnapshot() {
+        Product product = createProduct(
+                "Address Snapshot Product",
+                "100.00",
+                10
+        );
+
+        addToCart(product, 2);
+
+        String expectedFullAddress = shippingAddress.toFullAddress();
+
+        OrderResponse response = orderService.createOrder(createOrderRequest());
+
+        assertThat(response.getStatus()).isEqualTo(OrderStatus.PENDING);
+
+        assertThat(response.getRecipientName())
+                .isEqualTo(shippingAddress.getRecipientName());
+
+        assertThat(response.getPhoneNumber())
+                .isEqualTo(shippingAddress.getPhoneNumber());
+
+        assertThat(response.getShippingAddress())
+                .isEqualTo(expectedFullAddress);
+
+        Order persisted = orderRepository
+                .findDetailById(response.getId())
+                .orElseThrow();
+
+        assertThat(persisted.getRecipientName()).isEqualTo("Order Recipient");
+
+        assertThat(persisted.getPhoneNumber())
+                .isEqualTo("0901234567");
+
+        assertThat(persisted.getShippingAddress())
+                .isEqualTo(expectedFullAddress);
+    }
+
+    @Test
+    void createOrder_withAnotherUsersAddress_shouldRejectAndRollback() {
+        Product product = createProduct(
+                "Address Ownership Product",
+                "100.00",
+                10
+        );
+
+        addToCart(product, 2);
+
+        Cart cart = getUserCart();
+
+        User anotherUser = userRepository.saveAndFlush(
+                User.builder()
+                        .email("other-order-user@example.com")
+                        .password("test-password")
+                        .fullName("Other Order User")
+                        .role(Role.USER)
+                        .active(true)
+                        .build()
+        );
+
+        ShippingAddress anotherUserAddress =
+                createShippingAddress(
+                        anotherUser,
+                        "Other Recipient",
+                        "0987654321",
+                        "Ho Chi Minh",
+                        "Quan 1",
+                        "Ben Nghe",
+                        "100 Le Loi"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.createOrder(
+                        createOrderRequest(anotherUserAddress.getId())
+                )
+        )
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Shipping address not found");
+
+        assertThat(orderRepository.count()).isZero();
+
+        assertThat(productRepository
+                .findById(product.getId())
+                .orElseThrow()
+                .getStock()
+        ).isEqualTo(10);
+
+        assertThat(inventoryTransactionRepository.findAll()).isEmpty();
+
+        assertThat(countCartItems(cart.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void createOrder_whenShippingAddressUpdatedOrDeleted_shouldKeepOriginalSnapshot() {
+        Product product = createProduct(
+                "Historical Address Product",
+                "150.00",
+                10
+        );
+
+        addToCart(product, 1);
+
+        String originalRecipient = shippingAddress.getRecipientName();
+
+        String originalPhone = shippingAddress.getPhoneNumber();
+
+        String originalFullAddress = shippingAddress.toFullAddress();
+
+        OrderResponse createdOrder = orderService.createOrder(createOrderRequest());
+
+        ShippingAddress addressToUpdate = shippingAddressRepository
+                .findById(shippingAddress.getId())
+                .orElseThrow();
+
+        addressToUpdate.setRecipientName("Changed Recipient");
+
+        addressToUpdate.setPhoneNumber("0999999999");
+
+        addressToUpdate.setProvince("Ho Chi Minh");
+
+        addressToUpdate.setDistrict("Quan 1");
+
+        addressToUpdate.setWard("Ben Nghe");
+
+        addressToUpdate.setAddressLine("999 Changed Street");
+
+        shippingAddressRepository.saveAndFlush(addressToUpdate);
+
+        Order orderAfterAddressUpdate = orderRepository
+                .findDetailById(createdOrder.getId())
+                .orElseThrow();
+
+        assertThat(orderAfterAddressUpdate.getRecipientName())
+                .isEqualTo(originalRecipient);
+
+        assertThat(orderAfterAddressUpdate.getPhoneNumber())
+                .isEqualTo(originalPhone);
+
+        assertThat(orderAfterAddressUpdate.getShippingAddress())
+                .isEqualTo(originalFullAddress);
+
+        shippingAddressRepository
+                .deleteById(shippingAddress.getId());
+
+        shippingAddressRepository.flush();
+
+        assertThat(shippingAddressRepository.findById(shippingAddress.getId())).isEmpty();
+
+        Order orderAfterAddressDelete = orderRepository
+                .findDetailById(createdOrder.getId())
+                .orElseThrow();
+
+        assertThat(orderAfterAddressDelete.getRecipientName())
+                .isEqualTo(originalRecipient);
+
+        assertThat(orderAfterAddressDelete.getPhoneNumber())
+                .isEqualTo(originalPhone);
+
+        assertThat(orderAfterAddressDelete.getShippingAddress())
+                .isEqualTo(originalFullAddress);
     }
 
     @Test
@@ -372,11 +551,39 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
     }
 
     private CreateOrderRequest createOrderRequest() {
+        return createOrderRequest(shippingAddress.getId());
+    }
+
+    private CreateOrderRequest createOrderRequest(UUID addressId) {
         CreateOrderRequest request = new CreateOrderRequest();
-        request.setRecipientName("Order Recipient");
-        request.setPhoneNumber("0901234567");
-        request.setShippingAddress("123 Test Street");
+
+        request.setAddressId(addressId);
+
         return request;
+    }
+
+    private ShippingAddress createShippingAddress(
+            User owner,
+            String recipientName,
+            String phoneNumber,
+            String province,
+            String district,
+            String ward,
+            String addressLine
+    ) {
+
+        ShippingAddress address = new ShippingAddress();
+
+        address.setUser(owner);
+        address.setRecipientName(recipientName);
+        address.setPhoneNumber(phoneNumber);
+        address.setProvince(province);
+        address.setDistrict(district);
+        address.setWard(ward);
+        address.setAddressLine(addressLine);
+        address.setDefaultAddress(true);
+
+        return shippingAddressRepository.saveAndFlush(address);
     }
 
     private UpdateOrderStatusRequest updateStatusRequest(OrderStatus status) {
@@ -421,10 +628,12 @@ class OrderIntegrationTest extends AbstractIntegrationTest {
     private void cleanDatabase() {
         jdbcTemplate.execute("""
                 TRUNCATE TABLE
+                    inventory_transactions,
                     order_items,
                     orders,
                     cart_items,
                     carts,
+                    shipping_addresses,
                     products,
                     categories,
                     users

@@ -52,7 +52,7 @@ public class Order {
     @Column(name = "phone_number", nullable = false, length = 30)
     private String phoneNumber;
 
-    @Column(name = "shipping_address", nullable = false, length = 500)
+    @Column(name = "shipping_address", nullable = false, length = 600)
     private String shippingAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -2,6 +2,8 @@ package com.duynhat.ecommerce_backend.integration.order;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.integration.AbstractIntegrationTest;
+import com.duynhat.ecommerce_backend.modules.address.ShippingAddressRepository;
+import com.duynhat.ecommerce_backend.modules.address.entity.ShippingAddress;
 import com.duynhat.ecommerce_backend.modules.cart.CartService;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
@@ -84,10 +86,14 @@ class OrderExpirationIntegrationTest extends AbstractIntegrationTest {
     private InventoryTransactionRepository inventoryTransactionRepository;
 
     @Autowired
+    private ShippingAddressRepository shippingAddressRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     private User user;
     private Category category;
+    private ShippingAddress shippingAddress;
 
     @BeforeEach
     void setUp() {
@@ -101,6 +107,16 @@ class OrderExpirationIntegrationTest extends AbstractIntegrationTest {
                         .role(Role.USER)
                         .active(true)
                         .build()
+        );
+
+        shippingAddress = createShippingAddress(
+                user,
+                "Expiration Recipient",
+                "0901234567",
+                "Ha Noi",
+                "Cau Giay",
+                "Dich Vong",
+                "123 Expiration Street"
         );
 
         category = categoryRepository.saveAndFlush(
@@ -539,11 +555,7 @@ class OrderExpirationIntegrationTest extends AbstractIntegrationTest {
     private CreateOrderRequest createOrderRequest() {
         CreateOrderRequest request = new CreateOrderRequest();
 
-        request.setRecipientName("Expiration Recipient");
-
-        request.setPhoneNumber("0901234567");
-
-        request.setShippingAddress("123 Expiration Street");
+        request.setAddressId(shippingAddress.getId());
 
         return request;
     }
@@ -562,6 +574,29 @@ class OrderExpirationIntegrationTest extends AbstractIntegrationTest {
         request.setSuccess(success);
 
         return request;
+    }
+
+    private ShippingAddress createShippingAddress(
+            User owner,
+            String recipientName,
+            String phoneNumber,
+            String province,
+            String district,
+            String ward,
+            String addressLine
+    ) {
+        ShippingAddress address = new ShippingAddress();
+
+        address.setUser(owner);
+        address.setRecipientName(recipientName);
+        address.setPhoneNumber(phoneNumber);
+        address.setProvince(province);
+        address.setDistrict(district);
+        address.setWard(ward);
+        address.setAddressLine(addressLine);
+        address.setDefaultAddress(true);
+
+        return shippingAddressRepository.saveAndFlush(address);
     }
 
     private void makeOrderOld(
@@ -626,18 +661,19 @@ class OrderExpirationIntegrationTest extends AbstractIntegrationTest {
 
     private void cleanDatabase() {
         jdbcTemplate.execute("""
-                TRUNCATE TABLE
-                    payments,
-                    inventory_transactions,
-                    order_items,
-                    orders,
-                    cart_items,
-                    carts,
-                    products,
-                    categories,
-                    users
-                CASCADE
-                """);
+            TRUNCATE TABLE
+                payments,
+                inventory_transactions,
+                order_items,
+                orders,
+                cart_items,
+                carts,
+                shipping_addresses,
+                products,
+                categories,
+                users
+            CASCADE
+            """);
     }
 
     private record PaymentAttemptResult(

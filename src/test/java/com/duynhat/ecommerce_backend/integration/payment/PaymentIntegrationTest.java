@@ -3,6 +3,8 @@ package com.duynhat.ecommerce_backend.integration.payment;
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.integration.AbstractIntegrationTest;
+import com.duynhat.ecommerce_backend.modules.address.ShippingAddressRepository;
+import com.duynhat.ecommerce_backend.modules.address.entity.ShippingAddress;
 import com.duynhat.ecommerce_backend.modules.cart.CartService;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
 import com.duynhat.ecommerce_backend.modules.category.CategoryRepository;
@@ -76,10 +78,14 @@ public class PaymentIntegrationTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private ShippingAddressRepository shippingAddressRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     private User user;
     private Category category;
+    private ShippingAddress shippingAddress;
 
     @BeforeEach
     void setUp() {
@@ -93,6 +99,16 @@ public class PaymentIntegrationTest extends AbstractIntegrationTest {
                         .role(Role.USER)
                         .active(true)
                         .build()
+        );
+
+        shippingAddress = createShippingAddress(
+                user,
+                "Payment Recipient",
+                "0901234567",
+                "Ha Noi",
+                "Cau Giay",
+                "Dich Vong",
+                "123 Payment Street"
         );
 
         category = categoryRepository.saveAndFlush(
@@ -696,11 +712,7 @@ public class PaymentIntegrationTest extends AbstractIntegrationTest {
     private CreateOrderRequest createOrderRequest() {
         CreateOrderRequest request = new CreateOrderRequest();
 
-        request.setRecipientName("Payment Recipient");
-
-        request.setPhoneNumber("0901234567");
-
-        request.setShippingAddress("123 Payment Street");
+        request.setAddressId(shippingAddress.getId());
 
         return request;
     }
@@ -730,19 +742,44 @@ public class PaymentIntegrationTest extends AbstractIntegrationTest {
                 );
     }
 
+    private ShippingAddress createShippingAddress(
+            User owner,
+            String recipientName,
+            String phoneNumber,
+            String province,
+            String district,
+            String ward,
+            String addressLine
+    ) {
+        ShippingAddress address = new ShippingAddress();
+
+        address.setUser(owner);
+        address.setRecipientName(recipientName);
+        address.setPhoneNumber(phoneNumber);
+        address.setProvince(province);
+        address.setDistrict(district);
+        address.setWard(ward);
+        address.setAddressLine(addressLine);
+        address.setDefaultAddress(true);
+
+        return shippingAddressRepository
+                .saveAndFlush(address);
+    }
+
     private void cleanDatabase() {
         jdbcTemplate.execute("""
-                TRUNCATE TABLE
-                    payments,
-                    inventory_transactions,
-                    order_items,
-                    orders,
-                    cart_items,
-                    carts,
-                    products,
-                    categories,
-                    users
-                CASCADE
-                """);
+            TRUNCATE TABLE
+                payments,
+                inventory_transactions,
+                order_items,
+                orders,
+                cart_items,
+                carts,
+                shipping_addresses,
+                products,
+                categories,
+                users
+            CASCADE
+            """);
     }
 }
