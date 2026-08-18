@@ -2,6 +2,8 @@ package com.duynhat.ecommerce_backend.modules.order.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
+import com.duynhat.ecommerce_backend.modules.address.ShippingAddressRepository;
+import com.duynhat.ecommerce_backend.modules.address.entity.ShippingAddress;
 import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
@@ -63,12 +65,19 @@ public class OrderServiceImpl implements OrderService {
     private CartItemRepository cartItemRepository;
 
     @Autowired
+    private ShippingAddressRepository shippingAddressRepository;
+
+    @Autowired
     private InventoryTransactionRepository inventoryTransactionRepository;
 
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         User user = getCurrentUser();
+
+        ShippingAddress shippingAddress = shippingAddressRepository
+                .findByIdAndUserId(request.getAddressId(), user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found"));
 
         Cart cart = cartRepository
                 .findByUserIdForUpdate(user.getId())
@@ -86,7 +95,8 @@ public class OrderServiceImpl implements OrderService {
                 .sorted()
                 .toList();
 
-        List<Product> lockedProducts = productRepository.findOrderableByIdsForUpdate(productIds);
+        List<Product> lockedProducts = productRepository
+                .findOrderableByIdsForUpdate(productIds);
 
         if (lockedProducts.size() != productIds.size()) {
             throw new BadRequestException("One or more products no longer exist");
@@ -101,12 +111,13 @@ public class OrderServiceImpl implements OrderService {
                 );
 
         Order order = new Order();
+
         order.setOrderCode(generateOrderCode());
         order.setUser(user);
         order.setStatus(OrderStatus.PENDING);
-        order.setRecipientName(request.getRecipientName().trim());
-        order.setPhoneNumber(request.getPhoneNumber().trim());
-        order.setShippingAddress(request.getShippingAddress().trim());
+        order.setRecipientName(shippingAddress.getRecipientName());
+        order.setPhoneNumber(shippingAddress.getPhoneNumber());
+        order.setShippingAddress(shippingAddress.toFullAddress());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -132,6 +143,7 @@ public class OrderServiceImpl implements OrderService {
             );
 
             OrderItem orderItem = new OrderItem();
+            
             orderItem.setProduct(product);
             orderItem.setProductName(product.getName());
             orderItem.setUnitPrice(unitPrice);
