@@ -1,0 +1,2 @@
+ALTER TABLE orders
+ALTER COLUMN shipping_address TYPE VARCHAR(600);
