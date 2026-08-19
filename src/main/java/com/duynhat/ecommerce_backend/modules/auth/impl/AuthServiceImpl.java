@@ -8,6 +8,7 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.request.ChangePasswordRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
@@ -160,6 +161,43 @@ public class AuthServiceImpl implements AuthService {
         User user = userService.findByEmail(email);
 
         Set<UUID> sessionIds = refreshTokenService.revokeAllRefreshTokens(user.getId());
+
+        sessionIds.forEach(accessTokenBlacklistService::blacklistSession);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest req) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository
+                .findByEmail(normalizedEmail)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        if (!passwordEncoder.matches(
+                req.getCurrentPassword(),
+                user.getPassword()
+        )) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        if (!req.getNewPassword().equals(req.getConfirmNewPassword())) {
+            throw new BadRequestException("Password confirmation does not match");
+        }
+
+        if (passwordEncoder.matches(
+                req.getNewPassword(),
+                user.getPassword()
+        )) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+
+        userRepository.save(user);
+
+        Set<UUID> sessionIds = refreshTokenService
+                .revokeAllRefreshTokens(user.getId());
 
         sessionIds.forEach(accessTokenBlacklistService::blacklistSession);
     }

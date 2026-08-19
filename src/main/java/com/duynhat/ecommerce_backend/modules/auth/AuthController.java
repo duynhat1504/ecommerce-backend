@@ -4,6 +4,7 @@ import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.request.ChangePasswordRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
@@ -170,6 +171,33 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Logged out from all devices successfully",
+                        null
+                )
+        );
+    }
+
+    @PutMapping("/change-password")
+    @Operation(
+            summary = "Change password",
+            description = "Change password of the authenticated user and revoke all login sessions"
+    )
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest req,
+            HttpServletResponse servletResponse
+    ) {
+        authService.changePassword(authentication.getName(), req);
+
+        ResponseCookie deletedRefreshTokenCookie = refreshTokenCookieFactory.delete();
+
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                deletedRefreshTokenCookie.toString()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Password changed successfully. Please login again.",
                         null
                 )
         );
