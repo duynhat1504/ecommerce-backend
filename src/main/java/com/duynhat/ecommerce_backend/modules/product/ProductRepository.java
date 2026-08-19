@@ -258,4 +258,12 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     );
     boolean existsByCategory_IdAndDeletedAtIsNull(UUID categoryId);
     Optional<Product> findByIdAndDeletedAtIsNull(UUID id);
+
+    @Query("""
+        SELECT p.id
+        FROM Product p
+        WHERE p.category.id = :categoryId
+          AND p.deletedAt IS NULL
+        """)
+    List<UUID> findIdsByCategoryId(@Param("categoryId") UUID categoryId);
 }
