@@ -63,6 +63,15 @@ public class Payment {
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
+    @Column(name = "merchant_txn_ref", unique = true, length = 100)
+    private String merchantTxnRef;
+
+    @Column(name = "gateway_response_code", length = 30)
+    private String gatewayResponseCode;
+
+    @Column(name = "gateway_transaction_no", length = 100)
+    private String gatewayTransactionNo;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
