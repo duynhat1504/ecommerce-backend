@@ -9,6 +9,7 @@ import com.duynhat.ecommerce_backend.modules.category.dto.request.UpdateCategory
 import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryResponse;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
+import com.duynhat.ecommerce_backend.modules.product.cache.ProductCacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -32,6 +33,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ProductCacheService productCacheService;
 
     @Override
     @Transactional
@@ -87,6 +91,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     @Caching(
             evict = {
                     @CacheEvict(
@@ -114,15 +119,20 @@ public class CategoryServiceImpl implements CategoryService {
                     }
                 });
 
-        category.setName(normalizedName);
+        List<UUID> affectedProductIds = productRepository.findIdsByCategoryId(id);
 
+        category.setName(normalizedName);
         category.setDescription(normalizedDescription);
 
         if (req.getActive() != null) {
             category.setActive(req.getActive());
         }
 
-        return toResponse(categoryRepository.save(category));
+        Category saved = categoryRepository.save(category);
+
+        productCacheService.evictProductDetails(affectedProductIds);
+
+        return toResponse(saved);
     }
 
     @Override

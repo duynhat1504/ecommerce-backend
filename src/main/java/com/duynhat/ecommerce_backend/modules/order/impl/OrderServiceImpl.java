@@ -22,6 +22,7 @@ import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.order.entity.OrderItem;
 import com.duynhat.ecommerce_backend.modules.order.enums.OrderStatus;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
+import com.duynhat.ecommerce_backend.modules.product.cache.ProductCacheService;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
@@ -66,6 +67,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ShippingAddressRepository shippingAddressRepository;
+
+    @Autowired
+    private ProductCacheService productCacheService;
 
     @Autowired
     private InventoryTransactionRepository inventoryTransactionRepository;
@@ -185,6 +189,8 @@ public class OrderServiceImpl implements OrderService {
         if (deletedItems != cartItems.size()) {
             throw new IllegalStateException("Unable to clear all cart items");
         }
+
+        productCacheService.evictProductDetails(productIds);
 
         return toResponse(savedOrder);
     }
@@ -574,5 +580,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         inventoryTransactionRepository.saveAll(inventoryTransactions);
+
+        productCacheService.evictProductDetails(productIds);
     }
 }

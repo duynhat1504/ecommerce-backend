@@ -82,6 +82,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProductResponse> findProducts(ProductQueryRequest req) {
         int page = req.getPage() == null ? 0 : req.getPage();
         int size = req.getSize() == null ? 10 : req.getSize();
@@ -137,6 +138,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = PRODUCT_DETAIL,
             key = "#id"
