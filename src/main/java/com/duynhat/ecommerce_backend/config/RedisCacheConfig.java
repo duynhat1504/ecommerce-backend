@@ -1,6 +1,7 @@
 package com.duynhat.ecommerce_backend.config;
 
 import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryResponse;
+import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -27,18 +28,16 @@ public class RedisCacheConfig {
 
     public static final String CATEGORY_DETAIL = "categoryDetail";
 
+    public static final String PRODUCT_DETAIL = "productDetail";
+
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
             ObjectMapper objectMapper
     ) {
 
-        JacksonJsonRedisSerializer<CategoryResponse>
-                categoryDetailSerializer =
-                new JacksonJsonRedisSerializer<>(
-                        objectMapper,
-                        CategoryResponse.class
-                );
+        JacksonJsonRedisSerializer<CategoryResponse> categoryDetailSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, CategoryResponse.class);
 
         JavaType categoryListType = objectMapper
                 .getTypeFactory()
@@ -47,30 +46,20 @@ public class RedisCacheConfig {
                         CategoryResponse.class
                         );
 
-        JacksonJsonRedisSerializer<List<CategoryResponse>>
-                categoryListSerializer =
-                new JacksonJsonRedisSerializer<>(
-                        objectMapper,
-                        categoryListType
+        JacksonJsonRedisSerializer<List<CategoryResponse>> categoryListSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, categoryListType);
+
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration
+                .defaultCacheConfig()
+                .disableCachingNullValues();
+
+        RedisCacheConfiguration categoryListConfig = defaultConfig
+                .entryTtl(Duration.ofMinutes(10))
+                .serializeValuesWith(
+                        RedisSerializationContext
+                                .SerializationPair
+                                .fromSerializer(categoryListSerializer)
                 );
-
-        RedisCacheConfiguration defaultConfig =
-                RedisCacheConfiguration
-                        .defaultCacheConfig()
-                        .disableCachingNullValues();
-
-        RedisCacheConfiguration categoryListConfig =
-                defaultConfig
-                        .entryTtl(
-                                Duration.ofMinutes(10)
-                        )
-                        .serializeValuesWith(
-                                RedisSerializationContext
-                                        .SerializationPair
-                                        .fromSerializer(
-                                                categoryListSerializer
-                                        )
-                        );
 
         RedisCacheConfiguration categoryDetailConfig =
                 defaultConfig
@@ -81,13 +70,28 @@ public class RedisCacheConfig {
                                         .fromSerializer(categoryDetailSerializer)
                         );
 
+        JacksonJsonRedisSerializer<ProductResponse> productDetailSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, ProductResponse.class);
+
+        RedisCacheConfiguration productDetailConfig = defaultConfig
+                .entryTtl(Duration.ofMinutes(5))
+                .serializeValuesWith(
+                        RedisSerializationContext
+                                .SerializationPair
+                                .fromSerializer(productDetailSerializer)
+                );
+
         Map<String, RedisCacheConfiguration>
                 cacheConfigurations =
                 Map.of(
                         CATEGORY_LIST,
                         categoryListConfig,
+
                         CATEGORY_DETAIL,
-                        categoryDetailConfig
+                        categoryDetailConfig,
+
+                        PRODUCT_DETAIL,
+                        productDetailConfig
                 );
 
         RedisCacheWriter cacheWriter =

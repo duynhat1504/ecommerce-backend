@@ -15,7 +15,8 @@ import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.duynhat.ecommerce_backend.config.RedisCacheConfig.PRODUCT_DETAIL;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -134,6 +137,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
     public ProductResponse getById(UUID id) {
         Product product = productRepository
                 .findByIdAndActiveTrueAndDeletedAtIsNullAndCategory_ActiveTrueAndCategory_DeletedAtIsNull(id)
@@ -144,6 +151,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
     public ProductResponse update(UUID id, UpdateProductRequest req) {
         Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -165,6 +176,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
     public ProductResponse adjustStock(UUID id, AdjustProductStockRequest req) {
         if (req.getQuantity() == 0) {
             throw new BadRequestException("Stock adjustment must not be zero");
@@ -253,6 +268,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
     public void delete(UUID id) {
         Product product = productRepository
                 .findByIdForUpdate(id)
