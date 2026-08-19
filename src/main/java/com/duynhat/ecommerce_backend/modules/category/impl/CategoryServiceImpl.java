@@ -10,6 +10,9 @@ import com.duynhat.ecommerce_backend.modules.category.dto.response.CategoryRespo
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import static com.duynhat.ecommerce_backend.config.RedisCacheConfig.CATEGORY_DETAIL;
+import static com.duynhat.ecommerce_backend.config.RedisCacheConfig.CATEGORY_LIST;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -28,6 +34,11 @@ public class CategoryServiceImpl implements CategoryService {
     private ProductRepository productRepository;
 
     @Override
+    @Transactional
+    @CacheEvict(
+            cacheNames = CATEGORY_LIST,
+            allEntries = true
+    )
     public CategoryResponse create(CreateCategoryRequest req) {
         String normalizedName = req.getName().trim();
 
@@ -50,6 +61,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = CATEGORY_LIST,
+            key = "'all'"
+    )
     public List<CategoryResponse> getAll() {
         return categoryRepository
                 .findAllByActiveTrueAndDeletedAtIsNull()
@@ -59,6 +74,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = CATEGORY_DETAIL,
+            key = "#id"
+    )
     public CategoryResponse getById(UUID id) {
         Category category = categoryRepository
                 .findByIdAndActiveTrueAndDeletedAtIsNull(id)
@@ -68,6 +87,18 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(
+                            cacheNames = CATEGORY_LIST,
+                            allEntries = true
+                    ),
+                    @CacheEvict(
+                            cacheNames = CATEGORY_DETAIL,
+                            key = "#id"
+                    )
+            }
+    )
     public CategoryResponse update(UUID id, UpdateCategoryRequest req) {
         Category category = findCategoryById(id);
 
@@ -135,6 +166,18 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
+    @Caching(
+            evict = {
+                    @CacheEvict(
+                            cacheNames = CATEGORY_LIST,
+                            allEntries = true
+                    ),
+                    @CacheEvict(
+                            cacheNames = CATEGORY_DETAIL,
+                            key = "#id"
+                    )
+            }
+    )
     public void delete(UUID id) {
         Category category = categoryRepository
                 .findById(id)
