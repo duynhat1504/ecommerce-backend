@@ -10,6 +10,9 @@ app:
     expiration-scan-delay-ms: ${ORDER_EXPIRATION_SCAN_DELAY_MS:60000}
     expiration-initial-delay-ms: ${ORDER_EXPIRATION_INITIAL_DELAY_MS:30000}
 
+  email-verification:
+    expiration-minutes: 10
+
   vnpay:
     pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
     tmn-code: ${VNPAY_TMN_CODE:}
