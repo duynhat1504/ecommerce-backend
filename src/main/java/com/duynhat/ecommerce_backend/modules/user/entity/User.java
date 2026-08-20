@@ -40,6 +40,9 @@ public class User {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -53,6 +56,10 @@ public class User {
 
         if (this.active == null) {
             this.active = true;
+        }
+
+        if (this.emailVerified == null) {
+            this.emailVerified = false;
         }
     }
 

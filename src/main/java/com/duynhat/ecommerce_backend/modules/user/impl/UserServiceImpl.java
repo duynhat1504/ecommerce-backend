@@ -92,6 +92,8 @@ public class UserServiceImpl implements UserService {
 
         if (googleUser.isPresent()) {
             User existingUser = googleUser.get();
+            
+            existingUser.setEmailVerified(true);
 
             if (existingUser.getFullName() == null
                     || existingUser.getFullName().isBlank()) {

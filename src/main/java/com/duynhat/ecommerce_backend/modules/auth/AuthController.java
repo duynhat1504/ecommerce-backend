@@ -4,8 +4,10 @@ import com.duynhat.ecommerce_backend.common.core.dto.ApiResponse;
 import com.duynhat.ecommerce_backend.modules.auth.cookie.RefreshTokenCookieFactory;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.request.ChangePasswordRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
+import com.duynhat.ecommerce_backend.modules.auth.dto.request.ResendVerificationRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
@@ -170,6 +172,60 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Logged out from all devices successfully",
+                        null
+                )
+        );
+    }
+
+    @PutMapping("/change-password")
+    @Operation(
+            summary = "Change password",
+            description = "Change password of the authenticated user and revoke all login sessions"
+    )
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest req,
+            HttpServletResponse servletResponse
+    ) {
+        authService.changePassword(authentication.getName(), req);
+
+        ResponseCookie deletedRefreshTokenCookie = refreshTokenCookieFactory.delete();
+
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                deletedRefreshTokenCookie.toString()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Password changed successfully. Please login again.",
+                        null
+                )
+        );
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Email verified successfully",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<Void>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest req
+    ) {
+
+        authService.resendVerification(req.getEmail());
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "If the email is eligible, a verification email has been sent",
                         null
                 )
         );
