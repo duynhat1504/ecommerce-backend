@@ -1,12 +1,15 @@
 package com.duynhat.ecommerce_backend.unit.auth;
 
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
+import com.duynhat.ecommerce_backend.modules.auth.EmailVerificationService;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.EmailVerificationTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
+import com.duynhat.ecommerce_backend.modules.auth.email.EmailService;
 import com.duynhat.ecommerce_backend.modules.auth.impl.AuthServiceImpl;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -46,6 +49,12 @@ class AuthServiceImplTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -59,6 +68,12 @@ class AuthServiceImplTest {
             user.setId(UUID.randomUUID());
             return user;
         });
+        when(emailVerificationService.createVerificationToken(any(User.class)))
+                .thenReturn(new EmailVerificationTokenCreationResult(
+                        "user@example.com",
+                        "raw-token",
+                        LocalDateTime.now().plusMinutes(10)
+                ));
 
         RegisterResponse response = authService.register(request);
 
@@ -68,6 +83,7 @@ class AuthServiceImplTest {
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getPassword()).isEqualTo("encoded-password");
         assertThat(userCaptor.getValue().getActive()).isTrue();
+        verify(emailService).sendVerificationEmail("user@example.com", "raw-token");
     }
 
     @Test
@@ -182,6 +198,7 @@ class AuthServiceImplTest {
                 .password("encoded-password")
                 .role(Role.USER)
                 .active(true)
+                .emailVerified(true)
                 .build();
     }
 }

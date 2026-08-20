@@ -7,6 +7,7 @@ import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.ChangePasswordRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
+import com.duynhat.ecommerce_backend.modules.auth.dto.request.ResendVerificationRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
@@ -198,6 +199,33 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Password changed successfully. Please login again.",
+                        null
+                )
+        );
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Email verified successfully",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<Void>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest req
+    ) {
+
+        authService.resendVerification(req.getEmail());
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "If the email is eligible, a verification email has been sent",
                         null
                 )
         );
