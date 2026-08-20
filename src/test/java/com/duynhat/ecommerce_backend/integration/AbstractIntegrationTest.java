@@ -1,10 +1,12 @@
 package com.duynhat.ecommerce_backend.integration;
 
+import com.duynhat.ecommerce_backend.modules.auth.email.EmailService;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -13,6 +15,9 @@ import org.testcontainers.utility.DockerImageName;
 @ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
     private static final int REDIS_PORT = 6379;
+
+    @MockitoBean
+    protected EmailService emailService;
 
     @ServiceConnection
     protected static final PostgreSQLContainer POSTGRES =

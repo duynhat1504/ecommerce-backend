@@ -20,6 +20,8 @@ app:
     return-url: ${VNPAY_RETURN_URL:http://localhost:8081/api/payments/vnpay/return}
     expire-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:15}
 
+  backend-url: ${BACKEND_URL:http://localhost:8081}
+
 auth:
   refresh-cookie:
     secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
@@ -68,6 +70,18 @@ spring:
               - openid
               - profile
               - email
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 
 jwt:

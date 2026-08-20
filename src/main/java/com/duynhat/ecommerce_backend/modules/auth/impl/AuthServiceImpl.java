@@ -3,17 +3,16 @@ package com.duynhat.ecommerce_backend.modules.auth.impl;
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.modules.auth.AccessTokenBlacklistService;
 import com.duynhat.ecommerce_backend.modules.auth.AuthService;
+import com.duynhat.ecommerce_backend.modules.auth.EmailVerificationService;
 import com.duynhat.ecommerce_backend.modules.auth.RefreshTokenService;
-import com.duynhat.ecommerce_backend.modules.auth.dto.internal.LoginResult;
-import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshResult;
-import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenCreationResult;
-import com.duynhat.ecommerce_backend.modules.auth.dto.internal.RefreshTokenRotationResult;
+import com.duynhat.ecommerce_backend.modules.auth.dto.internal.*;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.ChangePasswordRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.LoginRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.request.RegisterRequest;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.AuthResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RefreshResponse;
 import com.duynhat.ecommerce_backend.modules.auth.dto.response.RegisterResponse;
+import com.duynhat.ecommerce_backend.modules.auth.email.EmailService;
 import com.duynhat.ecommerce_backend.modules.auth.jwt.JwtService;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.UserService;
@@ -49,6 +48,12 @@ public class AuthServiceImpl implements AuthService {
     private UserService userService;
 
     @Autowired
+    private EmailVerificationService emailVerificationService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private AccessTokenBlacklistService accessTokenBlacklistService;
 
     @Override
@@ -68,9 +73,18 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordHash)
                 .role(Role.USER)
                 .active(true)
+                .emailVerified(false)
                 .build();
 
         User saved = userRepository.save(user);
+
+        EmailVerificationTokenCreationResult verificationResult =
+                emailVerificationService.createVerificationToken(saved);
+
+        emailService.sendVerificationEmail(
+                verificationResult.email(),
+                verificationResult.rawToken()
+        );
 
         return RegisterResponse.builder()
                 .id(saved.getId())
@@ -99,6 +113,10 @@ public class AuthServiceImpl implements AuthService {
 
         if (!Boolean.TRUE.equals(user.getActive())) {
             throw new BadCredentialsException("Invalid email or password");
+        }
+
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new BadRequestException("Email is not verified");
         }
 
         RefreshTokenCreationResult refreshTokenResult = refreshTokenService.createRefreshToken(user);
@@ -200,5 +218,22 @@ public class AuthServiceImpl implements AuthService {
                 .revokeAllRefreshTokens(user.getId());
 
         sessionIds.forEach(accessTokenBlacklistService::blacklistSession);
+    }
+
+    @Override
+    public void verifyEmail(String rawToken) {
+        emailVerificationService.verifyEmail(rawToken);
+    }
+
+    @Override
+    public void resendVerification(String email) {
+        emailVerificationService
+                .resendVerification(email)
+                .ifPresent(result ->
+                        emailService.sendVerificationEmail(
+                                result.email(),
+                                result.rawToken()
+                        )
+                );
     }
 }
