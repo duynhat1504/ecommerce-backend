@@ -48,11 +48,14 @@ services:
       - "8081:8080"
 
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
 
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-ecommerce_db}
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-86400000}
@@ -66,7 +69,12 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET is required}
 
-      FRONTEND_URL: http://localhost:5173
+      MAIL_USERNAME: ${MAIL_USERNAME:?MAIL_USERNAME is required}
+      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD:?MAIL_APP_PASSWORD is required}
+
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8081}
+
     depends_on:
       postgres:
         condition: service_healthy
