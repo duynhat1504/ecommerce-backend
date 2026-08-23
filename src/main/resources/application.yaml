@@ -1,8 +1,9 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8080}
 
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
+  backend-url: ${BACKEND_URL:http://localhost:8080}
 
   order:
     payment-timeout-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:15}
@@ -11,21 +12,14 @@ app:
     expiration-initial-delay-ms: ${ORDER_EXPIRATION_INITIAL_DELAY_MS:30000}
 
   email-verification:
-    expiration-minutes: 10
+    expiration-minutes: ${EMAIL_VERIFICATION_EXPIRATION_MINUTES:10}
 
   vnpay:
     pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
     tmn-code: ${VNPAY_TMN_CODE:}
     hash-secret: ${VNPAY_HASH_SECRET:}
-    return-url: ${VNPAY_RETURN_URL:http://localhost:8081/api/payments/vnpay/return}
+    return-url: ${VNPAY_RETURN_URL:http://localhost:8080/api/payments/vnpay/return}
     expire-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:15}
-
-  backend-url: ${BACKEND_URL:http://localhost:8081}
-
-auth:
-  refresh-cookie:
-    secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
-    same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
 
 spring:
   config:
@@ -34,16 +28,16 @@ spring:
   application:
     name: ecommerce-backend
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ecommerce_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/ecommerce_db
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
 
   flyway:
     enabled: true
@@ -53,10 +47,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${JPA_FORMAT_SQL:false}
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   security:
@@ -83,12 +77,22 @@ spring:
           starttls:
             enable: true
 
-
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
-  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:86400000}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
 
-  #secret: key dùng để ký token
-  #access-token-expiration: thời gian sống của token, đơn vị milliseconds
-  #86400000 = 24 giờ
+auth:
+  refresh-cookie:
+    secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
+    same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never
