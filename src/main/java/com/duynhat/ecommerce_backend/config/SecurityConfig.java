@@ -55,6 +55,27 @@ public class SecurityConfig {
 
     @Bean
     @Order(0)
+    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/actuator/**")
+                .csrf(csrf -> csrf.disable())
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        )
+                        .permitAll()
+                        .anyRequest()
+                        .denyAll()
+                )
+                .build();
+    }
+
+    @Bean
+    @Order(1)
     public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(
@@ -68,7 +89,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher("/oauth2/**", "/login/oauth2/**")
@@ -81,7 +102,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher("/api/**")
