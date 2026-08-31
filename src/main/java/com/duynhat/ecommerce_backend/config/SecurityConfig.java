@@ -141,6 +141,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/inventory/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/categories/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
 
                         // User APIs
                         .requestMatchers("/api/users/me").authenticated()
