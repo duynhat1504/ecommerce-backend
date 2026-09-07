@@ -1,3 +1,14 @@
+server:
+  address: 0.0.0.0
+  forward-headers-strategy: framework
+  error:
+    include-exception: false
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
+
 spring:
   config:
     activate:
@@ -13,6 +24,13 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
 
   jpa:
     hibernate:
@@ -45,3 +63,16 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.duynhat.ecommerce_backend: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
