@@ -3,8 +3,8 @@ package com.duynhat.ecommerce_backend.modules.product;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
 import com.duynhat.ecommerce_backend.modules.product.dto.response.ProductResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface ProductService {
@@ -17,4 +17,5 @@ public interface ProductService {
     ProductResponse getByIdForAdmin(UUID id);
     Page<ProductResponse> findProductsForAdmin(AdminProductQueryRequest request);
     void delete(UUID id);
+    ProductResponse uploadImage(UUID id, MultipartFile file);
 }

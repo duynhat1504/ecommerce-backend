@@ -7,6 +7,7 @@ import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
 import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
 import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
+import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
@@ -25,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -47,6 +49,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private MediaStorageService mediaStorageService;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
@@ -314,6 +319,29 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return Sort.by(sortDirection, field);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
+    public ProductResponse uploadImage(UUID id, MultipartFile file) {
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        String objectKey = mediaStorageService.upload(
+                file,
+                "products/" + id
+        );
+
+        product.setImageUrl(objectKey);
+
+        Product saved = productRepository.save(product);
+
+        return toResponse(saved);
     }
 
     private void validatePagination(int page, int size) {
