@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -17,6 +18,13 @@ public class MinioMediaStorageService implements MediaStorageService {
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+    );
 
     @Override
     public String upload(
@@ -56,6 +64,21 @@ public class MinioMediaStorageService implements MediaStorageService {
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("File is required");
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BadRequestException(
+                    "File size must not exceed 5 MB"
+            );
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null
+                || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BadRequestException(
+                    "Only JPEG, PNG, and WebP images are allowed"
+            );
         }
     }
 
