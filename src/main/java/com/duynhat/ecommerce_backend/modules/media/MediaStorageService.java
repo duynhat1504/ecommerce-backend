@@ -8,4 +8,6 @@ public interface MediaStorageService {
             MultipartFile file,
             String prefix
     );
+
+    MediaObject get(String objectKey);
 }
