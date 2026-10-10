@@ -102,4 +102,22 @@ public class AdminProductController {
                 )
         );
     }
+
+    @DeleteMapping("/{id}/image")
+    @Operation(
+            summary = "Delete product image",
+            description = "Delete the current product image. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<ProductResponse>> deleteImage(
+            @PathVariable UUID id
+    ) {
+        ProductResponse product = productService.deleteImage(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Delete product image successfully",
+                        product
+                )
+        );
+    }
 }

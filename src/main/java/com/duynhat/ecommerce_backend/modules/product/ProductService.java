@@ -18,4 +18,5 @@ public interface ProductService {
     Page<ProductResponse> findProductsForAdmin(AdminProductQueryRequest request);
     void delete(UUID id);
     ProductResponse uploadImage(UUID id, MultipartFile file);
+    ProductResponse deleteImage(UUID id);
 }

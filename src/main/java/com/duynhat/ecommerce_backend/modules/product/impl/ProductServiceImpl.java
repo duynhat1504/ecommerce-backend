@@ -354,6 +354,32 @@ public class ProductServiceImpl implements ProductService {
         return toResponse(saved);
     }
 
+    @Override
+    @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
+    public ProductResponse deleteImage(UUID id) {
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        String objectKey = product.getImageUrl();
+
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BadRequestException("Product does not have an image");
+        }
+
+        mediaStorageService.delete(objectKey);
+
+        product.setImageUrl(null);
+
+        Product saved = productRepository.save(product);
+
+        return toResponse(saved);
+    }
+
     private void validatePagination(int page, int size) {
         if (page < 0) {
             throw new BadRequestException("Page index must not be negative");
