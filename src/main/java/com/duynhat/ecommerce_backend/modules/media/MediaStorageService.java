@@ -10,4 +10,6 @@ public interface MediaStorageService {
     );
 
     MediaObject get(String objectKey);
+
+    void delete(String objectKey);
 }

@@ -4,10 +4,7 @@ import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
 import com.duynhat.ecommerce_backend.config.MinioProperties;
 import com.duynhat.ecommerce_backend.modules.media.MediaObject;
 import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
-import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.StatObjectArgs;
+import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -94,6 +91,27 @@ public class MinioMediaStorageService implements MediaStorageService {
         } catch (Exception ex) {
             throw new IllegalStateException(
                     "Failed to read file from MinIO",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    public void delete(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return;
+        }
+
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectKey.trim())
+                            .build()
+            );
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Failed to delete file from MinIO",
                     ex
             );
         }

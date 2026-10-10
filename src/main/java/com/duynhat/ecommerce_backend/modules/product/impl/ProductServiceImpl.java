@@ -336,14 +336,20 @@ public class ProductServiceImpl implements ProductService {
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        String objectKey = mediaStorageService.upload(
+        String oldObjectKey = product.getImageUrl();
+
+        String newObjectKey = mediaStorageService.upload(
                 file,
                 "products/" + id
         );
 
-        product.setImageUrl(objectKey);
+        product.setImageUrl(newObjectKey);
 
         Product saved = productRepository.save(product);
+
+        if (oldObjectKey != null && !oldObjectKey.isBlank()) {
+            mediaStorageService.delete(oldObjectKey);
+        }
 
         return toResponse(saved);
     }
