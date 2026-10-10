@@ -73,14 +73,11 @@ public class ProductServiceImpl implements ProductService {
 
         String normalizedDescription = normalizeNullableText(req.getDescription());
 
-        String normalizedImageUrl = normalizeNullableText(req.getImageUrl());
-
         Product product = Product.builder()
                 .name(normalizedName)
                 .description(normalizedDescription)
                 .price(req.getPrice())
                 .stock(req.getStock())
-                .imageUrl(normalizedImageUrl)
                 .category(category)
                 .active(true)
                 .build();
@@ -175,7 +172,6 @@ public class ProductServiceImpl implements ProductService {
         product.setName(req.getName().trim());
         product.setDescription(normalizeNullableText(req.getDescription()));
         product.setPrice(req.getPrice());
-        product.setImageUrl(normalizeNullableText(req.getImageUrl()));
         product.setCategory(category);
 
         if (req.getActive() != null) {
