@@ -8,6 +8,7 @@ import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepos
 import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
 import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
 import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
+import com.duynhat.ecommerce_backend.modules.media.MediaUrlService;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
@@ -52,6 +53,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private MediaStorageService mediaStorageService;
+
+    @Autowired
+    private MediaUrlService mediaUrlService;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
@@ -383,7 +387,11 @@ public class ProductServiceImpl implements ProductService {
                 .description(product.getDescription())
                 .price(product.getPrice())
                 .stock(product.getStock())
-                .imageUrl(product.getImageUrl())
+                .imageUrl(
+                        mediaUrlService.toPublicUrl(
+                                product.getImageUrl()
+                        )
+                )
                 .active(product.getActive())
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
