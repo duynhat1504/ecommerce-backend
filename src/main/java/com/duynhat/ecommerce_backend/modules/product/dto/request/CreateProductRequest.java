@@ -26,9 +26,6 @@ public class CreateProductRequest {
     @Min(value = 0, message = "Stock must be greater than or equal to 0")
     private Integer stock;
 
-    @Size(max = 500, message = "Image URL must not exceed 500 characters")
-    private String imageUrl;
-
     @NotBlank(message = "Category name is required")
     @Size(max = 100, message = "Category name must not exceed 100 characters")
     private String categoryName;

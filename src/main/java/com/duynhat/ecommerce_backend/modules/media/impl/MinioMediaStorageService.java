@@ -1,0 +1,180 @@
+package com.duynhat.ecommerce_backend.modules.media.impl;
+
+import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.config.MinioProperties;
+import com.duynhat.ecommerce_backend.modules.media.MediaObject;
+import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
+import io.minio.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class MinioMediaStorageService implements MediaStorageService {
+
+    private final MinioClient minioClient;
+    private final MinioProperties minioProperties;
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+    );
+
+    @Override
+    public String upload(
+            MultipartFile file,
+            String prefix
+    ) {
+        validateFile(file);
+
+        String objectKey = buildObjectKey(
+                prefix,
+                file.getOriginalFilename()
+        );
+
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectKey)
+                            .stream(
+                                    file.getInputStream(),
+                                    file.getSize(),
+                                    -1
+                            )
+                            .contentType(file.getContentType())
+                            .build()
+            );
+
+            return objectKey;
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Failed to upload file to MinIO",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    public MediaObject get(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BadRequestException("Object key is required");
+        }
+
+        try {
+            String normalizedKey = objectKey.trim();
+
+            var stat = minioClient.statObject(
+                    StatObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(normalizedKey)
+                            .build()
+            );
+
+            try (var inputStream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(normalizedKey)
+                            .build()
+            )) {
+                return new MediaObject(
+                        inputStream.readAllBytes(),
+                        stat.contentType()
+                );
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Failed to read file from MinIO",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    public void delete(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return;
+        }
+
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectKey.trim())
+                            .build()
+            );
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Failed to delete file from MinIO",
+                    ex
+            );
+        }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("File is required");
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BadRequestException(
+                    "File size must not exceed 5 MB"
+            );
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null
+                || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BadRequestException(
+                    "Only JPEG, PNG, and WebP images are allowed"
+            );
+        }
+    }
+
+    private String buildObjectKey(
+            String prefix,
+            String originalFilename
+    ) {
+        String extension = getExtension(originalFilename);
+
+        return "%s/%s%s".formatted(
+                normalizePrefix(prefix),
+                UUID.randomUUID(),
+                extension
+        );
+    }
+
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            throw new BadRequestException("File prefix is required");
+        }
+
+        return prefix
+                .trim()
+                .replaceAll("^/+", "")
+                .replaceAll("/+$", "");
+    }
+
+    private String getExtension(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "";
+        }
+
+        int dotIndex = filename.lastIndexOf('.');
+
+        if (dotIndex < 0) {
+            return "";
+        }
+
+        return filename
+                .substring(dotIndex)
+                .toLowerCase();
+    }
+}
