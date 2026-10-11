@@ -7,6 +7,8 @@ import com.duynhat.ecommerce_backend.modules.category.entity.Category;
 import com.duynhat.ecommerce_backend.modules.inventory.InventoryTransactionRepository;
 import com.duynhat.ecommerce_backend.modules.inventory.entity.InventoryTransaction;
 import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactionType;
+import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
+import com.duynhat.ecommerce_backend.modules.media.MediaUrlService;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.ProductService;
 import com.duynhat.ecommerce_backend.modules.product.dto.request.*;
@@ -25,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,6 +51,12 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private MediaStorageService mediaStorageService;
+
+    @Autowired
+    private MediaUrlService mediaUrlService;
+
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
             "price",
@@ -64,14 +73,11 @@ public class ProductServiceImpl implements ProductService {
 
         String normalizedDescription = normalizeNullableText(req.getDescription());
 
-        String normalizedImageUrl = normalizeNullableText(req.getImageUrl());
-
         Product product = Product.builder()
                 .name(normalizedName)
                 .description(normalizedDescription)
                 .price(req.getPrice())
                 .stock(req.getStock())
-                .imageUrl(normalizedImageUrl)
                 .category(category)
                 .active(true)
                 .build();
@@ -166,7 +172,6 @@ public class ProductServiceImpl implements ProductService {
         product.setName(req.getName().trim());
         product.setDescription(normalizeNullableText(req.getDescription()));
         product.setPrice(req.getPrice());
-        product.setImageUrl(normalizeNullableText(req.getImageUrl()));
         product.setCategory(category);
 
         if (req.getActive() != null) {
@@ -316,6 +321,61 @@ public class ProductServiceImpl implements ProductService {
         return Sort.by(sortDirection, field);
     }
 
+    @Override
+    @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
+    public ProductResponse uploadImage(UUID id, MultipartFile file) {
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        String oldObjectKey = product.getImageUrl();
+
+        String newObjectKey = mediaStorageService.upload(
+                file,
+                "products/" + id
+        );
+
+        product.setImageUrl(newObjectKey);
+
+        Product saved = productRepository.save(product);
+
+        if (oldObjectKey != null && !oldObjectKey.isBlank()) {
+            mediaStorageService.delete(oldObjectKey);
+        }
+
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(
+            cacheNames = PRODUCT_DETAIL,
+            key = "#id"
+    )
+    public ProductResponse deleteImage(UUID id) {
+        Product product = productRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        String objectKey = product.getImageUrl();
+
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BadRequestException("Product does not have an image");
+        }
+
+        mediaStorageService.delete(objectKey);
+
+        product.setImageUrl(null);
+
+        Product saved = productRepository.save(product);
+
+        return toResponse(saved);
+    }
+
     private void validatePagination(int page, int size) {
         if (page < 0) {
             throw new BadRequestException("Page index must not be negative");
@@ -355,7 +415,11 @@ public class ProductServiceImpl implements ProductService {
                 .description(product.getDescription())
                 .price(product.getPrice())
                 .stock(product.getStock())
-                .imageUrl(product.getImageUrl())
+                .imageUrl(
+                        mediaUrlService.toPublicUrl(
+                                product.getImageUrl()
+                        )
+                )
                 .active(product.getActive())
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())

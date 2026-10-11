@@ -22,9 +22,6 @@ public class UpdateProductRequest {
     @Digits(integer = 10, fraction = 2, message = "Price must have at most 10 integer digits and 2 decimal places")
     private BigDecimal price;
 
-    @Size(max = 500, message = "Image URL must not exceed 500 characters")
-    private String imageUrl;
-
     @NotBlank(message = "Category name is required")
     @Size(max = 100, message = "Category name must not exceed 100 characters")
     private String categoryName;

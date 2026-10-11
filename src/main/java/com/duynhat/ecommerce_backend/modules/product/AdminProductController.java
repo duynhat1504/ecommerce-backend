@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -75,6 +77,46 @@ public class AdminProductController {
                 ApiResponse.success(
                         "Delete product successfully",
                         null
+                )
+        );
+    }
+
+    @PostMapping(
+            value = "/{id}/image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @Operation(
+            summary = "Upload product image",
+            description = "Upload or replace a product image. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<ProductResponse>> uploadImage(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        ProductResponse product = productService.uploadImage(id, file);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Upload product image successfully",
+                        product
+                )
+        );
+    }
+
+    @DeleteMapping("/{id}/image")
+    @Operation(
+            summary = "Delete product image",
+            description = "Delete the current product image. ADMIN role is required"
+    )
+    public ResponseEntity<ApiResponse<ProductResponse>> deleteImage(
+            @PathVariable UUID id
+    ) {
+        ProductResponse product = productService.deleteImage(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Delete product image successfully",
+                        product
                 )
         );
     }

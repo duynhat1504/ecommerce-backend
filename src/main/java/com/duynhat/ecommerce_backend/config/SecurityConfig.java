@@ -126,6 +126,7 @@ public class SecurityConfig {
                         
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/media").permitAll()
 
                         // Products admin APIs
                         .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
