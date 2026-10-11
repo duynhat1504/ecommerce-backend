@@ -1,10 +1,12 @@
 package com.duynhat.ecommerce_backend.modules.media.impl;
 
 import com.duynhat.ecommerce_backend.common.core.exception.BadRequestException;
+import com.duynhat.ecommerce_backend.common.core.exception.ResourceNotFoundException;
 import com.duynhat.ecommerce_backend.config.MinioProperties;
 import com.duynhat.ecommerce_backend.modules.media.MediaObject;
 import com.duynhat.ecommerce_backend.modules.media.MediaStorageService;
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -63,36 +65,33 @@ public class MinioMediaStorageService implements MediaStorageService {
 
     @Override
     public MediaObject get(String objectKey) {
-        if (objectKey == null || objectKey.isBlank()) {
-            throw new BadRequestException("Object key is required");
-        }
-
         try {
-            String normalizedKey = objectKey.trim();
-
-            var stat = minioClient.statObject(
+            StatObjectResponse stat = minioClient.statObject(
                     StatObjectArgs.builder()
                             .bucket(minioProperties.getBucket())
-                            .object(normalizedKey)
+                            .object(objectKey)
                             .build()
             );
 
-            try (var inputStream = minioClient.getObject(
+            try (GetObjectResponse response = minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(minioProperties.getBucket())
-                            .object(normalizedKey)
+                            .object(objectKey)
                             .build()
             )) {
                 return new MediaObject(
-                        inputStream.readAllBytes(),
+                        response.readAllBytes(),
                         stat.contentType()
                 );
             }
+        } catch (ErrorResponseException ex) {
+            if ("NoSuchKey".equals(ex.errorResponse().code())) {
+                throw new ResourceNotFoundException("Media not found");
+            }
+
+            throw new IllegalStateException("Failed to get media object", ex);
         } catch (Exception ex) {
-            throw new IllegalStateException(
-                    "Failed to read file from MinIO",
-                    ex
-            );
+            throw new IllegalStateException("Failed to get media object", ex);
         }
     }
 
