@@ -68,4 +68,32 @@ public class SecurityIntegrationTest extends AbstractIntegrationTest {
                 )
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void getDashboardSummary_withoutAuthentication_shouldReturn401() throws Exception {
+        mockMvc.perform(get("/api/admin/dashboard/summary").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getDashboardSummary_withUserRole_shouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/admin/dashboard/summary").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("You do not have permission to access this resource"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getDashboardSummary_withAdminRole_shouldReturn200() throws Exception {
+        mockMvc.perform(get("/api/admin/dashboard/summary").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("Get dashboard summary successfully"));
+    }
 }
