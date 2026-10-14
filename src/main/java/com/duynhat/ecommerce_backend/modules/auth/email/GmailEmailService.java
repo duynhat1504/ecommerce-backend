@@ -38,15 +38,17 @@ public class GmailEmailService implements EmailService {
         message.setSubject("Verify your email");
 
         message.setText("""
-                Welcome to Ecommerce!
-
-                Please verify your email by clicking the link below:
-
-                %s
-
-                This link will expire in 30 minutes.
-
-                If you did not create this account, you can ignore this email.
+                Chào bạn,
+                
+                Cảm ơn bạn đã đăng ký tài khoản tại CHẬM.
+                
+                Vui lòng xác thực email bằng cách nhấn vào liên kết dưới đây:
+                
+                        %s
+                
+                Liên kết sẽ hết hạn sau 10 phút.
+                
+                Nếu bạn không tạo tài khoản này, bạn có thể bỏ qua email.
                 """.formatted(
                 verificationUrl
         ));
