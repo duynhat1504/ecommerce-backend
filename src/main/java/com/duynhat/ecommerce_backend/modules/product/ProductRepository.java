@@ -16,6 +16,14 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
 
+    long countByDeletedAtIsNull();
+    long countByActiveTrueAndDeletedAtIsNull();
+    long countByActiveTrueAndDeletedAtIsNullAndStockLessThanEqual(Integer stock);
+    List<Product> findByActiveTrueAndDeletedAtIsNullAndStockLessThanEqualOrderByStockAscNameAsc(
+            Integer stock,
+            Pageable pageable
+    );
+
     @Query(
             value = """
                 SELECT
