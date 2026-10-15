@@ -11,10 +11,12 @@ import com.duynhat.ecommerce_backend.modules.payment.dto.request.CreatePaymentRe
 import com.duynhat.ecommerce_backend.modules.payment.dto.request.CreateVnPayPaymentRequest;
 import com.duynhat.ecommerce_backend.modules.payment.dto.response.PaymentResponse;
 import com.duynhat.ecommerce_backend.modules.payment.dto.response.VnPayPaymentResponse;
+import com.duynhat.ecommerce_backend.modules.payment.dto.response.VnPayReturnResult;
 import com.duynhat.ecommerce_backend.modules.payment.entity.Payment;
 import com.duynhat.ecommerce_backend.modules.payment.enums.PaymentMethod;
 import com.duynhat.ecommerce_backend.modules.payment.enums.PaymentStatus;
 import com.duynhat.ecommerce_backend.modules.payment.gateway.vnpay.VnPayPaymentUrlBuilder;
+import com.duynhat.ecommerce_backend.modules.payment.gateway.vnpay.VnPayReturnVerifier;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
 import org.springframework.security.core.Authentication;
@@ -22,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,16 +40,20 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final VnPayPaymentUrlBuilder vnPayPaymentUrlBuilder;
 
+    private final VnPayReturnVerifier vnPayReturnVerifier;
+
     public PaymentServiceImpl(
             PaymentRepository paymentRepository,
             OrderRepository orderRepository,
             UserRepository userRepository,
-            VnPayPaymentUrlBuilder vnPayPaymentUrlBuilder
+            VnPayPaymentUrlBuilder vnPayPaymentUrlBuilder,
+            VnPayReturnVerifier vnPayReturnVerifier
     ) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.vnPayPaymentUrlBuilder = vnPayPaymentUrlBuilder;
+        this.vnPayReturnVerifier = vnPayReturnVerifier;
     }
 
     @Override
@@ -215,6 +222,80 @@ public class PaymentServiceImpl implements PaymentService {
         return toVnPayResponse(saved, paymentUrl);
     }
 
+    @Override
+    @Transactional
+    public VnPayReturnResult processVnPayReturn(
+            Map<String, String> params
+    ) {
+        if (!vnPayReturnVerifier.isValid(params)) {
+            throw new BadRequestException("Invalid VNPay signature");
+        }
+
+        String merchantTxnRef = params.get("vnp_TxnRef");
+
+        if (merchantTxnRef == null || merchantTxnRef.isBlank()) {
+            throw new BadRequestException("Missing VNPay transaction reference");
+        }
+
+        Payment payment = paymentRepository
+                .findByMerchantTxnRefForUpdate(merchantTxnRef)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(
+                                "Payment not found"
+                        )
+                );
+
+        validateVnPayAmount(
+                payment,
+                params.get("vnp_Amount")
+        );
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            return toVnPayReturnResult(payment);
+        }
+
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionStatus =
+                params.get("vnp_TransactionStatus");
+
+        payment.setGatewayResponseCode(responseCode);
+
+        String gatewayTransactionNo =
+                params.get("vnp_TransactionNo");
+
+        if (gatewayTransactionNo != null
+                && !gatewayTransactionNo.isBlank()) {
+            payment.setGatewayTransactionNo(
+                    gatewayTransactionNo
+            );
+        }
+
+        boolean successful =
+                "00".equals(responseCode)
+                        && "00".equals(transactionStatus);
+
+        if (successful) {
+            payment.setStatus(PaymentStatus.SUCCESS);
+
+            Order order = payment.getOrder();
+
+            if (order.getStatus() == OrderStatus.PENDING) {
+                order.setStatus(OrderStatus.CONFIRMED);
+            }
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason(
+                    "VNPay payment failed with response code "
+                            + responseCode
+            );
+        }
+
+        Payment saved =
+                paymentRepository.save(payment);
+
+        return toVnPayReturnResult(saved);
+    }
+
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -271,6 +352,53 @@ public class PaymentServiceImpl implements PaymentService {
                 .status(payment.getStatus())
                 .merchantTxnRef(payment.getMerchantTxnRef())
                 .paymentUrl(paymentUrl)
+                .build();
+    }
+
+    private void validateVnPayAmount(
+            Payment payment,
+            String vnPayAmount
+    ) {
+        if (vnPayAmount == null
+                || vnPayAmount.isBlank()) {
+            throw new BadRequestException(
+                    "Missing VNPay amount"
+            );
+        }
+
+        String expectedAmount;
+
+        try {
+            expectedAmount = payment
+                    .getAmount()
+                    .movePointRight(2)
+                    .toBigIntegerExact()
+                    .toString();
+        } catch (ArithmeticException ex) {
+            throw new BadRequestException(
+                    "Invalid payment amount"
+            );
+        }
+
+        if (!expectedAmount.equals(vnPayAmount)) {
+            throw new BadRequestException(
+                    "VNPay amount does not match payment"
+            );
+        }
+    }
+
+    private VnPayReturnResult toVnPayReturnResult(
+            Payment payment
+    ) {
+        return VnPayReturnResult
+                .builder()
+                .paymentId(payment.getId())
+                .orderId(payment.getOrder().getId())
+                .status(payment.getStatus())
+                .success(
+                        payment.getStatus()
+                                == PaymentStatus.SUCCESS
+                )
                 .build();
     }
 }
