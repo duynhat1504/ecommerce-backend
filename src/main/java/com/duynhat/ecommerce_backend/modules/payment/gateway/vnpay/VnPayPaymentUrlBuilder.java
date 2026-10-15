@@ -43,7 +43,9 @@ public class VnPayPaymentUrlBuilder {
 
         Map<String, String> params = new TreeMap<>();
 
-        params.put("vn_Version", "2.1.0");
+        params.put("vnp_Version", "2.1.0");
+
+        params.put("vnp_Command", "pay");
 
         params.put("vnp_TmnCode", properties.getTmnCode());
 
