@@ -31,3 +31,10 @@ jwt:
 
 app:
   frontend-url: http://localhost:3000
+
+  vnpay:
+    pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    tmn-code: TEST_TMN_CODE
+    hash-secret: TEST_VNPAY_HASH_SECRET
+    return-url: http://localhost:8080/api/payments/vnpay/return
+    expire-minutes: 15

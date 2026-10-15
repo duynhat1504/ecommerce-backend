@@ -5,12 +5,17 @@ import com.duynhat.ecommerce_backend.modules.payment.dto.request.CreatePaymentRe
 import com.duynhat.ecommerce_backend.modules.payment.dto.request.CreateVnPayPaymentRequest;
 import com.duynhat.ecommerce_backend.modules.payment.dto.response.PaymentResponse;
 import com.duynhat.ecommerce_backend.modules.payment.dto.response.VnPayPaymentResponse;
+import com.duynhat.ecommerce_backend.modules.payment.dto.response.VnPayReturnResult;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -22,6 +27,9 @@ public class PaymentController {
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @PostMapping
     public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
@@ -67,6 +75,27 @@ public class PaymentController {
                                 payment
                         )
                 );
+    }
+
+    @GetMapping("/vnpay/return")
+    public ResponseEntity<Void> handleVnPayReturn(
+            @RequestParam Map<String, String> params
+    ) {
+        VnPayReturnResult result =
+                paymentService.processVnPayReturn(params);
+
+        String redirectUrl =
+                frontendUrl
+                        + "/payment-result"
+                        + "?orderId="
+                        + result.getOrderId()
+                        + "&status="
+                        + result.getStatus().name();
+
+        return ResponseEntity
+                .status(HttpStatus.FOUND)
+                .location(URI.create(redirectUrl))
+                .build();
     }
 
     private String resolveClientIp(HttpServletRequest request) {

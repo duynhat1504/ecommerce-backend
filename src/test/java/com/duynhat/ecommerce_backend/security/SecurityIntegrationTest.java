@@ -96,4 +96,21 @@ public class SecurityIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message")
                         .value("Get dashboard summary successfully"));
     }
+
+    @Test
+    void vnPayReturn_withoutAuthentication_shouldNotReturn401() throws Exception {
+        mockMvc.perform(
+                        get("/api/payments/vnpay/return")
+                                .param("vnp_TxnRef", "VNP123456")
+                                .param("vnp_Amount", "15000000")
+                                .param("vnp_ResponseCode", "00")
+                                .param("vnp_TransactionStatus", "00")
+                                .param("vnp_SecureHash", "invalid-signature")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("Invalid VNPay signature"));
+    }
 }
