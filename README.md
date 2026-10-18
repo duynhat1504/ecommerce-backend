@@ -41,25 +41,21 @@ This project goes beyond basic CRUD by covering practical backend concerns such 
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    Client[Web Client]
-    Caddy[Caddy HTTPS Reverse Proxy]
-    API[Spring Boot REST API]
-
-    PostgreSQL[(PostgreSQL)]
-    Redis[(Redis)]
-    MinIO[(MinIO)]
-    VNPay[VNPay]
-    Mail[Email Service]
-
-    Client -->|HTTPS| Caddy
-    Caddy --> API
-    API --> PostgreSQL
-    API --> Redis
-    API --> MinIO
-    API --> VNPay
-    API --> Mail
+```text
+Web Client
+    |
+    | HTTPS
+    v
+Caddy Reverse Proxy
+    |
+    v
+Spring Boot REST API
+    |
+    +----------------+----------------+----------------+----------------+
+    |                |                |                |                |
+    v                v                v                v                v
+PostgreSQL         Redis            MinIO            VNPay        Email Service
+Primary DB         Cache        Object Storage    Payment Gateway
 ```
 
 The application is organized as a **modular monolith**. Each business domain contains its own controllers, services, repositories, entities, DTOs, and supporting logic, while common concerns such as security, exception handling, caching, and API response models are shared across modules.
@@ -253,22 +249,21 @@ This protects payment creation from accidental duplicate requests caused by retr
 
 ### VNPay Flow
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant VNPay
-    participant DB
-
-    Client->>API: Create VNPay payment
-    API->>DB: Create / validate payment
-    API->>API: Sign VNPay parameters
-    API-->>Client: Payment URL
-    Client->>VNPay: Complete payment
-    VNPay->>API: Return payment parameters
-    API->>API: Verify signature
-    API->>DB: Update payment/order status
-    API-->>Client: Redirect to payment result
+```text
+Client              Backend API              VNPay               PostgreSQL
+  |                      |                      |                      |
+  | Create payment       |                      |                      |
+  |--------------------->|                      |                      |
+  |                      | Create/validate      |                      |
+  |                      |-------------------------------------------->|
+  |                      | Sign VNPay params    |                      |
+  |<---------------------| Payment URL          |                      |
+  |                                             |                      |
+  | Complete payment -------------------------->|                      |
+  |                      |<---------------------| Return parameters    |
+  |                      | Verify signature     |                      |
+  |                      | Update payment/order ---------------------->|
+  |<---------------------| Redirect to result   |                      |
 ```
 
 The backend creates signed VNPay payment requests and verifies returned parameters before updating the corresponding payment and order state.
@@ -494,22 +489,26 @@ The Docker Compose environment contains the Spring Boot application, PostgreSQL,
 
 The repository includes a GitHub Actions pipeline.
 
-```mermaid
-flowchart LR
-    Push[Push to main]
-    Test[Build & Test]
-    Image[Build Docker Image]
-    Registry[Docker Hub]
-    OIDC[AWS OIDC]
-    SSM[AWS Systems Manager]
-    EC2[AWS EC2]
-
-    Push --> Test
-    Test --> Image
-    Image --> Registry
-    Registry --> OIDC
-    OIDC --> SSM
-    SSM --> EC2
+```text
+Push to main
+     |
+     v
+Build & Test
+     |
+     v
+Build Docker Image
+     |
+     v
+Docker Hub
+     |
+     v
+GitHub OIDC -> AWS IAM
+     |
+     v
+AWS Systems Manager
+     |
+     v
+AWS EC2
 ```
 
 For pushes to `main`, the pipeline:
@@ -532,26 +531,24 @@ Using AWS OIDC avoids storing long-lived AWS access keys in GitHub Actions.
 
 The application is containerized and deployed to **AWS EC2**.
 
-```mermaid
-flowchart TB
-    Internet[Internet]
-    HTTPS[HTTPS :443]
-    Caddy[Caddy]
-    Backend[Spring Boot Backend]
+```text
+Internet
+   |
+   | HTTPS :443
+   v
+Caddy Reverse Proxy
+   |
+   v
+Spring Boot Backend
+   |
+   +-------------------+-------------------+
+   |                   |                   |
+   v                   v                   v
+PostgreSQL            Redis               MinIO
+Primary DB            Cache          Object Storage
 
-    subgraph Docker
-        Backend
-        PostgreSQL[(PostgreSQL)]
-        Redis[(Redis)]
-        MinIO[(MinIO)]
-    end
-
-    Internet --> HTTPS
-    HTTPS --> Caddy
-    Caddy --> Backend
-    Backend --> PostgreSQL
-    Backend --> Redis
-    Backend --> MinIO
+All application services run in Docker on AWS EC2.
+PostgreSQL and Redis are not exposed directly to the public internet.
 ```
 
 Caddy acts as the public reverse proxy and handles TLS termination, while infrastructure services such as PostgreSQL and Redis are not exposed directly to the public internet.
