@@ -11,6 +11,7 @@ import com.duynhat.ecommerce_backend.modules.cart.dto.response.CartItemResponse;
 import com.duynhat.ecommerce_backend.modules.cart.dto.response.CartResponse;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
 import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
+import com.duynhat.ecommerce_backend.modules.media.MediaUrlService;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -41,6 +42,9 @@ public class CartServiceImpl implements CartService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private MediaUrlService mediaUrlService;
 
     @Override
     public CartResponse getCart() {
@@ -265,7 +269,7 @@ public class CartServiceImpl implements CartService {
         return CartItemResponse.builder()
                 .productId(product.getId())
                 .productName(product.getName())
-                .imageUrl(product.getImageUrl())
+                .imageUrl(mediaUrlService.toPublicUrl(product.getImageUrl()))
                 .unitPrice(product.getPrice())
                 .quantity(item.getQuantity())
                 .subtotal(subtotal)

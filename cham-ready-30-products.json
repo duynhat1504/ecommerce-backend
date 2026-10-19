@@ -1,0 +1,348 @@
+{
+  "categories": [
+    {
+      "id": "917e0995-6cd1-5419-960c-6002bdceaf1b",
+      "name": "Ấm pha cà phê",
+      "description": "Ấm cổ ngỗng và ấm điện dành cho pour over, trà và pha thủ công.",
+      "active": true
+    },
+    {
+      "id": "0f436d23-55a2-516d-b62d-607f54716520",
+      "name": "Máy xay",
+      "description": "Máy xay cà phê cho nhu cầu pha filter và sử dụng tại nhà.",
+      "active": true
+    },
+    {
+      "id": "7fb4de5f-7494-51bb-9422-a83d0a2977b2",
+      "name": "Ly & bình",
+      "description": "Ly giữ nhiệt, cốc và bình server cho cà phê nóng hoặc lạnh.",
+      "active": true
+    },
+    {
+      "id": "7622a0de-147f-53f9-88dd-0b4cd3394be6",
+      "name": "Phễu lọc",
+      "description": "Phễu và bộ dụng cụ pour over dành cho pha cà phê thủ công.",
+      "active": true
+    },
+    {
+      "id": "6f7a4c9b-0863-5cfa-adb2-b9fde2864470",
+      "name": "Cân",
+      "description": "Cân điện tử dành cho pha cà phê và theo dõi tỷ lệ chiết xuất.",
+      "active": true
+    },
+    {
+      "id": "db4ff90f-3efd-5813-a95c-f0f6a406afa0",
+      "name": "Bảo quản",
+      "description": "Hộp và phụ kiện giúp bảo quản hạt cà phê.",
+      "active": true
+    },
+    {
+      "id": "40dc2e9c-2dbd-59d4-8271-c277fdeb020b",
+      "name": "Phụ kiện",
+      "description": "Phụ kiện hỗ trợ pha, vệ sinh và hoàn thiện góc cà phê.",
+      "active": true
+    }
+  ],
+  "products": [
+    {
+      "id": "31042f88-5e5f-56f4-8baf-e88310888ed8",
+      "name": "Stagg EKG Pro 0.9L - Matte Black",
+      "description": "Ấm điện cổ ngỗng 0.9L với khả năng kiểm soát nhiệt độ chính xác, phù hợp pour over và các phương pháp pha thủ công.",
+      "price": 4850000,
+      "stock": 8,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "18a619a6-2f22-54b3-bfbf-cd60fc92f4aa",
+      "name": "Stagg EKG Pro 0.9L - Matte White",
+      "description": "Ấm điện cổ ngỗng màu trắng mờ, thiết kế tối giản và phù hợp cho góc pha hiện đại.",
+      "price": 4850000,
+      "stock": 7,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "b93da3e0-afb3-5da7-9749-97849c2dfea6",
+      "name": "Stagg EKG Pro 0.9L - Walnut",
+      "description": "Phiên bản tay cầm gỗ với thiết kế cao cấp, hỗ trợ kiểm soát nhiệt độ và tốc độ rót ổn định.",
+      "price": 5450000,
+      "stock": 5,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "6e3a91da-f841-52cb-ac74-ce730bcd074d",
+      "name": "Corvo EKG Pro 0.9L",
+      "description": "Ấm điện 0.9L với vòi rót rộng, phù hợp pha trà, cupping và các nhu cầu cần rót nhanh.",
+      "price": 5350000,
+      "stock": 6,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "44c5f065-0de5-59fe-9674-4b0b23b6b483",
+      "name": "Clyde Kettle 1.7L",
+      "description": "Ấm dung tích lớn 1.7L dành cho nhu cầu đun và phục vụ nhiều cốc trong cùng một lần.",
+      "price": 3090000,
+      "stock": 9,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "90e7138a-f1a8-574e-900f-8ca92a42f8d5",
+      "name": "Stagg Pour-Over Kettle",
+      "description": "Ấm cổ ngỗng chuyên pour over giúp kiểm soát dòng nước và nhịp rót chính xác.",
+      "price": 1950000,
+      "stock": 10,
+      "active": true,
+      "category": "Ấm pha cà phê",
+      "imageUrl": null
+    },
+    {
+      "id": "cb4d0ddf-5ff9-5b40-b93d-6c1bbee291aa",
+      "name": "Ode Brew Grinder Gen 2 - Black",
+      "description": "Máy xay burr điện dành cho filter coffee, tập trung vào độ đồng đều cỡ xay và trải nghiệm sử dụng tại nhà.",
+      "price": 9350000,
+      "stock": 5,
+      "active": true,
+      "category": "Máy xay",
+      "imageUrl": null
+    },
+    {
+      "id": "1f490ea1-58d2-5eaf-80e4-45aa698c3ccd",
+      "name": "Ode Brew Grinder Gen 2 - White",
+      "description": "Phiên bản màu trắng của máy xay burr điện dành cho pour over và các phương pháp pha filter.",
+      "price": 9350000,
+      "stock": 4,
+      "active": true,
+      "category": "Máy xay",
+      "imageUrl": null
+    },
+    {
+      "id": "9ea3dd6b-9b8f-5bb9-8dbf-7d5ae8816a7d",
+      "name": "Opus Conical Burr Grinder",
+      "description": "Máy xay burr hình nón với dải cỡ xay rộng, phù hợp nhiều phương pháp pha tại nhà.",
+      "price": 5500000,
+      "stock": 8,
+      "active": true,
+      "category": "Máy xay",
+      "imageUrl": null
+    },
+    {
+      "id": "8bfd45c6-04f5-5c9b-93ca-033471ce1c7b",
+      "name": "Carter Move Mug 355ml - Matte Black",
+      "description": "Ly giữ nhiệt 355ml với miệng uống rộng, phù hợp mang cà phê theo khi đi học hoặc đi làm.",
+      "price": 820000,
+      "stock": 18,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "4760bf52-50bf-598d-a7bb-9a0621cbc738",
+      "name": "Carter Move Mug 475ml - Matte Black",
+      "description": "Ly giữ nhiệt dung tích 475ml dành cho nhu cầu sử dụng cả ngày.",
+      "price": 860000,
+      "stock": 15,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "a37933d5-4ea1-5826-a133-3971d4e2991d",
+      "name": "Carter Slide Mug 475ml - Stone Blue",
+      "description": "Ly giữ nhiệt 475ml với nắp trượt tiện dụng và thiết kế tối giản.",
+      "price": 950000,
+      "stock": 12,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "e5b45b24-3292-5342-9a64-84e2329a8dda",
+      "name": "Carter Slide Mug 475ml - Smoke Green",
+      "description": "Phiên bản màu xanh khói với nắp trượt, phù hợp cho cà phê nóng và lạnh.",
+      "price": 950000,
+      "stock": 11,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "04fc99f6-712a-5e82-9bf4-fea9180b6c9b",
+      "name": "Carter Cold Tumbler 473ml - Matte Grey",
+      "description": "Tumbler giữ lạnh dung tích 473ml, thích hợp cho cold brew và đồ uống lạnh.",
+      "price": 960000,
+      "stock": 14,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "c8b2fda5-7c18-51ac-9f10-f26bb704273c",
+      "name": "Carter Carry Tumbler 591ml - Sienna",
+      "description": "Tumbler dung tích lớn với quai cầm, phù hợp mang theo trong ngày.",
+      "price": 1070000,
+      "stock": 9,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "2e921f7c-5f27-5437-9c0d-f3b4e63ae18f",
+      "name": "Mighty Small Glass Carafe - Clear",
+      "description": "Bình server thủy tinh trong suốt, phù hợp cho các công thức pour over hằng ngày.",
+      "price": 720000,
+      "stock": 13,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "89d3c9d2-5a60-5d60-83b2-5c004953774d",
+      "name": "Mighty Small Glass Carafe - Smoke",
+      "description": "Bình server thủy tinh màu khói với thiết kế gọn và hiện đại.",
+      "price": 720000,
+      "stock": 10,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "7641c7e8-cb6c-5790-896a-b9a5656d4fe4",
+      "name": "Stagg Double Wall Carafe 591ml",
+      "description": "Bình server hai lớp giúp hạn chế truyền nhiệt và giữ trải nghiệm phục vụ sạch gọn.",
+      "price": 1290000,
+      "stock": 9,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "7647a347-3da6-5620-93b9-0f62f9932244",
+      "name": "Joey Mug 235ml - Matte Black",
+      "description": "Cốc dung tích nhỏ phù hợp espresso, flat white và cà phê filter.",
+      "price": 705000,
+      "stock": 16,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "476d3b3e-43e1-50a3-b559-6f2d0e059e03",
+      "name": "Monty Espresso Cups - Set of 2",
+      "description": "Bộ hai cốc espresso với thiết kế thành cốc hỗ trợ trải nghiệm uống và latte art.",
+      "price": 910000,
+      "stock": 8,
+      "active": true,
+      "category": "Ly & bình",
+      "imageUrl": null
+    },
+    {
+      "id": "e461ed76-dea9-5833-8192-309697d51d4a",
+      "name": "Stagg XF Dripper Set",
+      "description": "Bộ dripper pour over có thiết kế thành cao, hỗ trợ dòng chảy ổn định và thao tác pha đơn giản.",
+      "price": 2180000,
+      "stock": 7,
+      "active": true,
+      "category": "Phễu lọc",
+      "imageUrl": null
+    },
+    {
+      "id": "91cfb489-f533-5cdb-8d0d-4553bd296798",
+      "name": "Stagg X Dripper Set",
+      "description": "Bộ dripper kích thước nhỏ dành cho các công thức pour over một đến hai cốc.",
+      "price": 1980000,
+      "stock": 8,
+      "active": true,
+      "category": "Phễu lọc",
+      "imageUrl": null
+    },
+    {
+      "id": "34115b4c-24f8-5cdf-b684-3257e9492c6c",
+      "name": "Tally Pro Precision Scale",
+      "description": "Cân pha cà phê chính xác với chế độ hỗ trợ tỷ lệ, phù hợp pour over và thử nghiệm công thức.",
+      "price": 4750000,
+      "stock": 6,
+      "active": true,
+      "category": "Cân",
+      "imageUrl": null
+    },
+    {
+      "id": "f82b63d4-f657-5941-98fe-8243e245ec2a",
+      "name": "Atmos Vacuum Canister 0.4L - Matte Black",
+      "description": "Hộp chân không nhỏ gọn dành cho lượng hạt sử dụng trong vài ngày.",
+      "price": 780000,
+      "stock": 16,
+      "active": true,
+      "category": "Bảo quản",
+      "imageUrl": null
+    },
+    {
+      "id": "69f06b91-adac-5a73-adc9-da8e1bc996ba",
+      "name": "Atmos Vacuum Canister 0.7L - Matte Black",
+      "description": "Hộp chân không 0.7L giúp hạn chế tiếp xúc với không khí và giữ hạt ổn định hơn.",
+      "price": 850000,
+      "stock": 15,
+      "active": true,
+      "category": "Bảo quản",
+      "imageUrl": null
+    },
+    {
+      "id": "cc429e4b-fe03-5928-aa3d-99a7e22be2e4",
+      "name": "Atmos Vacuum Canister 1.2L - Matte Black",
+      "description": "Hộp chân không dung tích lớn phù hợp bảo quản lượng hạt nhiều hơn.",
+      "price": 950000,
+      "stock": 10,
+      "active": true,
+      "category": "Bảo quản",
+      "imageUrl": null
+    },
+    {
+      "id": "03248b17-08bd-52c1-ac98-90c1e92b50f5",
+      "name": "Prismo AeroPress Attachment",
+      "description": "Phụ kiện cho AeroPress giúp thay đổi cách tạo áp suất và mở rộng phong cách pha.",
+      "price": 650000,
+      "stock": 12,
+      "active": true,
+      "category": "Phụ kiện",
+      "imageUrl": null
+    },
+    {
+      "id": "c27a2360-46b4-5d06-bbd7-09af18fab1cc",
+      "name": "Stagg Handle Kit - Black",
+      "description": "Bộ tay cầm thay thế cho ấm Stagg, dùng để bảo trì hoặc làm mới góc pha.",
+      "price": 450000,
+      "stock": 14,
+      "active": true,
+      "category": "Phụ kiện",
+      "imageUrl": null
+    },
+    {
+      "id": "f4b10675-6f47-5f04-a624-fe08fbc4374e",
+      "name": "EKG Pro Walnut Lid",
+      "description": "Nắp hoàn thiện gỗ dành cho dòng EKG Pro, phù hợp phối với các phụ kiện gỗ khác.",
+      "price": 345000,
+      "stock": 15,
+      "active": true,
+      "category": "Phụ kiện",
+      "imageUrl": null
+    },
+    {
+      "id": "263e93b7-66b2-5b44-a820-d94733943369",
+      "name": "Coffee Cleaning Brush Set",
+      "description": "Bộ cọ vệ sinh dành cho grinder, dripper và khu vực pha cà phê.",
+      "price": 190000,
+      "stock": 25,
+      "active": true,
+      "category": "Phụ kiện",
+      "imageUrl": null
+    }
+  ]
+}
