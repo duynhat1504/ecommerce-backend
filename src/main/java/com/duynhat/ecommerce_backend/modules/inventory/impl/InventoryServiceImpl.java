@@ -10,16 +10,20 @@ import com.duynhat.ecommerce_backend.modules.inventory.enums.InventoryTransactio
 import com.duynhat.ecommerce_backend.modules.order.entity.Order;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.user.entity.User;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -63,14 +67,58 @@ public class InventoryServiceImpl implements InventoryService {
         );
 
         return inventoryTransactionRepository
-                .findByProductWithFilters(
-                        productId,
-                        type,
-                        fromDateTime,
-                        toDateExclusive,
+                .findAll(
+                        buildSpecification(
+                                productId,
+                                type,
+                                fromDateTime,
+                                toDateExclusive
+                        ),
                         pageable
                 )
                 .map(this::toResponse);
+    }
+
+    private Specification<InventoryTransaction> buildSpecification(
+            UUID productId,
+            InventoryTransactionType type,
+            LocalDateTime fromDate,
+            LocalDateTime toDateExclusive
+    ) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(
+                    criteriaBuilder.equal(
+                            root.get("product").get("id"),
+                            productId
+                    )
+            );
+
+            if (type != null) {
+                predicates.add(criteriaBuilder.equal(root.get("type"), type));
+            }
+
+            if (fromDate != null) {
+                predicates.add(
+                        criteriaBuilder.greaterThanOrEqualTo(
+                                root.get("createdAt"),
+                                fromDate
+                        )
+                );
+            }
+
+            if (toDateExclusive != null) {
+                predicates.add(
+                        criteriaBuilder.lessThan(
+                                root.get("createdAt"),
+                                toDateExclusive
+                        )
+                );
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
     }
 
     private void validatePagination(int page, int size) {
