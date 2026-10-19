@@ -6,8 +6,10 @@ import com.duynhat.ecommerce_backend.modules.cart.CartItemRepository;
 import com.duynhat.ecommerce_backend.modules.cart.CartRepository;
 import com.duynhat.ecommerce_backend.modules.cart.dto.request.AddCartItemRequest;
 import com.duynhat.ecommerce_backend.modules.cart.entity.Cart;
+import com.duynhat.ecommerce_backend.modules.cart.entity.CartItem;
 import com.duynhat.ecommerce_backend.modules.cart.impl.CartServiceImpl;
 import com.duynhat.ecommerce_backend.modules.category.entity.Category;
+import com.duynhat.ecommerce_backend.modules.media.MediaUrlService;
 import com.duynhat.ecommerce_backend.modules.product.ProductRepository;
 import com.duynhat.ecommerce_backend.modules.product.entity.Product;
 import com.duynhat.ecommerce_backend.modules.user.UserRepository;
@@ -45,6 +47,9 @@ class CartServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private MediaUrlService mediaUrlService;
 
     @InjectMocks
     private CartServiceImpl cartService;
@@ -254,5 +259,27 @@ class CartServiceImplTest {
                 .hasMessage("User is not authenticated");
 
         verifyNoInteractions(userRepository, cartRepository);
+    }
+
+    @Test
+    void getCart_shouldReturnPublicProductImageUrl() {
+        CartItem item = new CartItem();
+        item.setProduct(product);
+        item.setQuantity(1);
+        cart.addItem(item);
+        product.setImageUrl("products/macbook.jpg");
+
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
+                .thenReturn(Optional.of(user));
+        when(cartRepository.findByUserId(user.getId()))
+                .thenReturn(Optional.of(cart));
+        when(mediaUrlService.toPublicUrl("products/macbook.jpg"))
+                .thenReturn("https://api.example.com/api/media?key=products%2Fmacbook.jpg");
+
+        var response = cartService.getCart();
+
+        assertThat(response.getItems()).singleElement()
+                .extracting("imageUrl")
+                .isEqualTo("https://api.example.com/api/media?key=products%2Fmacbook.jpg");
     }
 }
